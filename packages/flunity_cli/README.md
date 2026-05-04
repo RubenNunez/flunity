@@ -8,30 +8,38 @@ The `flunity` command — a development companion for Flutter + Unity WebGL proj
 dart pub global activate flunity_cli
 ```
 
-This installs three command names that all run the same binary:
+This installs three executable names that all run the same binary:
 
 | Command | Purpose |
 | --- | --- |
-| `flunity` | canonical name — use in scripts and CI |
-| `fl` | short alias for everyday typing |
-| `fu` | short alias for everyday typing |
+| `flunity` | canonical |
+| `fl` | short alias |
+| `fu` | short alias |
 
 Make sure `$HOME/.pub-cache/bin` is on your PATH.
 
-## How to use Flunity (end-to-end)
+## Commands
 
-The full how-to lives in the [main repo README](../../README.md#how-to). The short version:
-
-```bash
-fl create my_app                # scaffold
-fl doctor                       # verify environment
-# (open my_app/unity_project in Unity; build WebGL to unity_project/Builds/WebGL/)
-fl webgl serve                  # local dev server
-cd flutter_app && flutter run --dart-define=FLUNITY_MODE=dev
-# for production:
-fl webgl copy
-flutter build apk
 ```
+fl --version
+fl create <name> [--target webgl] [--org com.example] [--no-bridge]
+fl doctor
+fl webgl serve [--host <h>] [--port <p>] [--open]
+fl webgl copy [--clean]
+fl webgl clean
+fl bridge init [--force]
+```
+
+## How to use Flunity
+
+The full step-by-step walkthrough lives in the [main repo README](https://github.com/RubenNunez/flunity#how-to). Quick version:
+
+1. `fl create my_app && cd my_app`
+2. `fl doctor`
+3. Open `my_app/unity_project/` in Unity, build WebGL → `unity_project/Builds/WebGL/`
+4. `fl webgl serve` (one terminal)
+5. `cd flutter_app && flutter run --dart-define=FLUNITY_MODE=dev` (another terminal)
+6. For production: `fl webgl copy` then `flutter build <ios|apk|appbundle>`
 
 ## License
 
