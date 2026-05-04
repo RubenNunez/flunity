@@ -1,5 +1,6 @@
 import 'package:args/command_runner.dart';
 import 'package:flunity_cli/src/commands/create_command.dart';
+import 'package:flunity_cli/src/commands/doctor_command.dart';
 import 'package:mason_logger/mason_logger.dart';
 
 const String flunityVersion = '0.1.0';
@@ -16,7 +17,8 @@ Future<int> runFlunityCli(List<String> args, {Logger? logger}) async {
       negatable: false,
       help: 'Print the flunity version.',
     )
-    ..addCommand(CreateCommand(logger: log));
+    ..addCommand(CreateCommand(logger: log))
+    ..addCommand(DoctorCommand(logger: log));
 
   try {
     if (args.contains('--version') || args.contains('-v')) {

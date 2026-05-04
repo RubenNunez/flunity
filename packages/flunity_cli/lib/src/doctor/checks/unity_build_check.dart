@@ -1,0 +1,25 @@
+import 'dart:io';
+
+import 'package:flunity_cli/src/doctor/check.dart';
+import 'package:flunity_cli/src/manifest/flunity_project.dart';
+import 'package:path/path.dart' as p;
+
+class UnityBuildCheck implements Check {
+  UnityBuildCheck({required this.project});
+  final FlunityProject project;
+
+  @override
+  String get name => 'Unity WebGL build';
+
+  @override
+  Future<CheckResult> run() async {
+    final indexHtml = File(p.join(project.paths.unityBuild, 'index.html'));
+    if (!indexHtml.existsSync()) {
+      return CheckResult.warn(
+        'No build at ${project.paths.unityBuild}/index.html',
+        hint: 'Build WebGL from Unity into ${project.paths.unityBuild}/.',
+      );
+    }
+    return CheckResult.ok('Found at ${indexHtml.path}');
+  }
+}
