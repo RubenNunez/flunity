@@ -2,7 +2,7 @@ import 'package:meta/meta.dart';
 
 /// Wire-format envelope used by every Flunity message: `{"type": ..., "payload": ...}`.
 @immutable
-sealed class FlunityMessage {
+abstract class FlunityMessage {
   const FlunityMessage();
 
   String get type;
