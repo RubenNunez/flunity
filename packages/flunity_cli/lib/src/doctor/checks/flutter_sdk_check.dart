@@ -22,8 +22,9 @@ class FlutterSdkCheck implements Check {
       final output = result.stdout.toString();
       final match =
           RegExp(r'"frameworkVersion"\s*:\s*"([^"]+)"').firstMatch(output);
-      if (match == null)
+      if (match == null) {
         return CheckResult.warn('Could not parse Flutter version.');
+      }
       final v = Version.parse(match.group(1)!.split('-').first);
       final minimum = minimumVersion ?? _minimum;
       if (v < minimum) {

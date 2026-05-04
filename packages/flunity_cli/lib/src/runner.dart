@@ -25,7 +25,10 @@ Future<int> runFlunityCli(List<String> args, {Logger? logger}) async {
     ..addCommand(WebGLCommand(logger: log));
 
   try {
-    if (args.contains('--version') || args.contains('-v')) {
+    // Only treat --version / -v as a top-level short-circuit when it's the
+    // FIRST argument. Otherwise let it pass through to the subcommand so
+    // `fl create -v my_app` doesn't print the version and exit.
+    if (args.isNotEmpty && (args.first == '--version' || args.first == '-v')) {
       log.info('flunity $flunityVersion');
       return 0;
     }

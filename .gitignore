@@ -12,6 +12,7 @@ build/
 pubspec.lock
 .flutter-plugins
 .flutter-plugins-dependencies
+pubspec_overrides.yaml
 
 # Melos
 .melos_tool/

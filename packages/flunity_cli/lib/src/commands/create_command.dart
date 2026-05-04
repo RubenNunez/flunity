@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:args/command_runner.dart';
 import 'package:flunity_cli/src/templates/template_renderer.dart';
@@ -66,7 +67,14 @@ class CreateCommand extends Command<int> {
     // template. Plan C swaps in flutter_webgl_bridge as the default.
     const templateName = 'flutter_webgl_basic';
 
-    final templateRoot = _resolveTemplateRoot();
+    final templateRoot = await _resolveTemplateRoot();
+    if (templateRoot == null) {
+      _logger.err(
+        'Could not locate the Flunity templates directory. '
+        'Reinstall flunity_cli with `dart pub global activate flunity_cli`.',
+      );
+      return 70;
+    }
     final templatePath = p.join(templateRoot, templateName);
     if (!Directory(templatePath).existsSync()) {
       _logger.err('Template not found at $templatePath');
@@ -113,22 +121,41 @@ class CreateCommand extends Command<int> {
     return 0;
   }
 
-  String _resolveTemplateRoot() {
+  /// Locates the package's `templates/` directory.
+  ///
+  /// We try two strategies in order:
+  /// 1. `Isolate.resolvePackageUri` — works under `dart run` in JIT mode.
+  /// 2. Walk upward from `Platform.script` until we find a directory that
+  ///    contains `templates/flutter_webgl_basic/`. This is robust against
+  ///    AOT snapshots produced by `pub global activate`, where the script
+  ///    lives several directories below the package root.
+  Future<String?> _resolveTemplateRoot() async {
     final override = _templateRootOverride;
     if (override != null) return override;
-    // Locate templates/ relative to the executing script.
-    // Works for `dart run bin/flunity.dart` AND for `pub global run` (where
-    // Platform.script points into pub-cache/.../bin/flunity.dart-... .snapshot).
-    final scriptPath = Platform.script.toFilePath();
-    final scriptDir = p.dirname(scriptPath);
-    // Normal layout: <pkg>/bin/flunity.dart → templates/ at <pkg>/templates
-    final candidate = p.normalize(p.join(scriptDir, '..', 'templates'));
-    if (Directory(candidate).existsSync()) return candidate;
-    // Fallback for pub global activate: templates live alongside lib/ at
-    // <pub-cache>/hosted/.../templates
-    final altCandidate =
-        p.normalize(p.join(scriptDir, '..', '..', 'templates'));
-    if (Directory(altCandidate).existsSync()) return altCandidate;
-    return candidate; // will surface a clear error in run() if missing
+
+    try {
+      final libUri = await Isolate.resolvePackageUri(
+        Uri.parse('package:flunity_cli/flunity_cli.dart'),
+      );
+      if (libUri != null) {
+        final pkgRoot = p.dirname(p.dirname(libUri.toFilePath()));
+        final candidate = p.join(pkgRoot, 'templates');
+        if (Directory(candidate).existsSync()) return candidate;
+      }
+    } catch (_) {
+      // Fall through to the walk-upward strategy.
+    }
+
+    Directory? dir = Directory(p.dirname(Platform.script.toFilePath()));
+    for (var i = 0; i < 8 && dir != null; i++) {
+      final candidate = p.join(dir.path, 'templates', 'flutter_webgl_basic');
+      if (Directory(candidate).existsSync()) {
+        return p.join(dir.path, 'templates');
+      }
+      final parent = dir.parent;
+      if (parent.path == dir.path) break;
+      dir = parent;
+    }
+    return null;
   }
 }
