@@ -10,6 +10,8 @@ build/
 .pub-cache/
 .pub/
 pubspec.lock
+.flutter-plugins
+.flutter-plugins-dependencies
 
 # Melos
 .melos_tool/
