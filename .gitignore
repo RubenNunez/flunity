@@ -1,0 +1,26 @@
+.DS_Store
+.idea/
+.vscode/
+*.iml
+
+# Dart / Flutter
+.dart_tool/
+.packages
+build/
+.pub-cache/
+.pub/
+pubspec.lock
+
+# Melos
+.melos_tool/
+
+# Unity (in case templates render here during dev)
+**/Library/
+**/Temp/
+**/Builds/
+**/Logs/
+**/UserSettings/
+**/MemoryCaptures/
+*.csproj
+*.sln
+*.unityproj
