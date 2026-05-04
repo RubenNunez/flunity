@@ -34,7 +34,8 @@ void main() {
   });
 
   test('substitutes __var__ in file and directory names', () async {
-    final nested = Directory(p.join(templateDir.path, '__app_name__'))..createSync();
+    final nested = Directory(p.join(templateDir.path, '__app_name__'))
+      ..createSync();
     File(p.join(nested.path, '__app_name___main.dart'))
         .writeAsStringSync('// __app_name__');
 
@@ -45,7 +46,8 @@ void main() {
     );
 
     expect(
-      File(p.join(outputDir.path, 'my_app', 'my_app_main.dart')).readAsStringSync(),
+      File(p.join(outputDir.path, 'my_app', 'my_app_main.dart'))
+          .readAsStringSync(),
       '// my_app',
     );
   });
@@ -57,7 +59,8 @@ void main() {
       to: outputDir.path,
       variables: {'app_name': 'x'},
     );
-    expect(File(p.join(outputDir.path, 'static.txt')).readAsStringSync(), 'hello');
+    expect(
+        File(p.join(outputDir.path, 'static.txt')).readAsStringSync(), 'hello');
   });
 
   test('throws when required variable is missing', () async {
@@ -72,7 +75,8 @@ void main() {
     );
   });
 
-  test('refuses to overwrite an existing destination unless force=true', () async {
+  test('refuses to overwrite an existing destination unless force=true',
+      () async {
     File(p.join(outputDir.path, 'existing.txt')).writeAsStringSync('keep me');
     File(p.join(templateDir.path, 'existing.txt')).writeAsStringSync('NEW');
 
@@ -91,6 +95,7 @@ void main() {
       variables: const {},
       force: true,
     );
-    expect(File(p.join(outputDir.path, 'existing.txt')).readAsStringSync(), 'NEW');
+    expect(
+        File(p.join(outputDir.path, 'existing.txt')).readAsStringSync(), 'NEW');
   });
 }

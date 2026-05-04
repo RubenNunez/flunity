@@ -15,7 +15,8 @@ class App extends StatelessWidget {
       title: '__app_name__',
       home: Scaffold(
         appBar: AppBar(title: const Text('__app_name__')),
-        body: const Center(child: Text('Flunity scaffold — wire up FlunityWebGLView next.')),
+        body: const Center(
+            child: Text('Flunity scaffold — wire up FlunityWebGLView next.')),
       ),
     );
   }

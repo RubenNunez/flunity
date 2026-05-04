@@ -7,17 +7,20 @@ import 'package:test/test.dart';
 
 void main() {
   test('--version prints and exits 0', () async {
-    final code = await runFlunityCli(['--version'], logger: Logger(level: Level.quiet));
+    final code =
+        await runFlunityCli(['--version'], logger: Logger(level: Level.quiet));
     expect(code, 0);
   });
 
   test('--help exits 0', () async {
-    final code = await runFlunityCli(['--help'], logger: Logger(level: Level.quiet));
+    final code =
+        await runFlunityCli(['--help'], logger: Logger(level: Level.quiet));
     expect(code, 0);
   });
 
   test('unknown command exits 64', () async {
-    final code = await runFlunityCli(['zomg'], logger: Logger(level: Level.quiet));
+    final code =
+        await runFlunityCli(['zomg'], logger: Logger(level: Level.quiet));
     expect(code, 64);
   });
 }

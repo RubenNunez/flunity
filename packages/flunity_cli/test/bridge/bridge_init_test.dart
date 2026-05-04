@@ -20,17 +20,20 @@ void main() {
   tearDown(() => tmp.deleteSync(recursive: true));
 
   test('adds dep, creates files, leaves missing index.html alone', () async {
-    final project = FlunityProject.loadFromManifest(p.join(tmp.path, 'flunity.yaml'));
+    final project =
+        FlunityProject.loadFromManifest(p.join(tmp.path, 'flunity.yaml'));
     final summary = await initBridge(project: project, bridgeVersion: '0.1.0');
     expect(summary.depAdded, isTrue);
     expect(summary.filesCreated, isNotEmpty);
     expect(summary.indexHtmlPatched, isFalse);
-    final pubspec = File(p.join(tmp.path, 'flutter_app/pubspec.yaml')).readAsStringSync();
+    final pubspec =
+        File(p.join(tmp.path, 'flutter_app/pubspec.yaml')).readAsStringSync();
     expect(pubspec, contains('flunity_bridge: ^0.1.0'));
   });
 
   test('idempotent without --force', () async {
-    final project = FlunityProject.loadFromManifest(p.join(tmp.path, 'flunity.yaml'));
+    final project =
+        FlunityProject.loadFromManifest(p.join(tmp.path, 'flunity.yaml'));
     final first = await initBridge(project: project, bridgeVersion: '0.1.0');
     expect(first.filesCreated, isNotEmpty);
     final second = await initBridge(project: project, bridgeVersion: '0.1.0');
@@ -43,11 +46,13 @@ void main() {
         .createSync(recursive: true);
     File(p.join(tmp.path, 'unity_project/Builds/WebGL/index.html'))
         .writeAsStringSync('<html><body></body></html>');
-    final project = FlunityProject.loadFromManifest(p.join(tmp.path, 'flunity.yaml'));
+    final project =
+        FlunityProject.loadFromManifest(p.join(tmp.path, 'flunity.yaml'));
     final summary = await initBridge(project: project, bridgeVersion: '0.1.0');
     expect(summary.indexHtmlPatched, isTrue);
-    final patched = File(p.join(tmp.path, 'unity_project/Builds/WebGL/index.html'))
-        .readAsStringSync();
+    final patched =
+        File(p.join(tmp.path, 'unity_project/Builds/WebGL/index.html'))
+            .readAsStringSync();
     expect(patched, contains('flunity:patch'));
   });
 }

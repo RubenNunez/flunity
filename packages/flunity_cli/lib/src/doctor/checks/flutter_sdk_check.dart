@@ -20,8 +20,10 @@ class FlutterSdkCheck implements Check {
             hint: 'Is Flutter installed and on PATH?');
       }
       final output = result.stdout.toString();
-      final match = RegExp(r'"frameworkVersion"\s*:\s*"([^"]+)"').firstMatch(output);
-      if (match == null) return CheckResult.warn('Could not parse Flutter version.');
+      final match =
+          RegExp(r'"frameworkVersion"\s*:\s*"([^"]+)"').firstMatch(output);
+      if (match == null)
+        return CheckResult.warn('Could not parse Flutter version.');
       final v = Version.parse(match.group(1)!.split('-').first);
       final minimum = minimumVersion ?? _minimum;
       if (v < minimum) {

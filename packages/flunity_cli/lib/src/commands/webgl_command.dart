@@ -43,7 +43,8 @@ class _ServeSubcommand extends Command<int> {
     final project = _loadProjectOrDie(_logger);
     if (project == null) return 64;
 
-    final host = (argResults!['host'] as String?) ?? project.webgl.devServer.host;
+    final host =
+        (argResults!['host'] as String?) ?? project.webgl.devServer.host;
     final port = int.tryParse((argResults!['port'] as String?) ?? '') ??
         project.webgl.devServer.port;
     final indexHtml = File('${project.paths.unityBuild}/index.html');
@@ -91,8 +92,8 @@ class _ServeSubcommand extends Command<int> {
 
 class _CopySubcommand extends Command<int> {
   _CopySubcommand({required Logger logger}) : _logger = logger {
-    argParser.addFlag('clean', defaultsTo: false,
-        help: 'Remove destination first.');
+    argParser.addFlag('clean',
+        defaultsTo: false, help: 'Remove destination first.');
   }
 
   final Logger _logger;

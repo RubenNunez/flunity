@@ -14,9 +14,11 @@ void main() {
 
   test('renders the basic template into <name>/', () async {
     // Build a tiny fake template tree so the test doesn't depend on the real one.
-    final fakeTemplateRoot = Directory(p.join(tmp.path, 'templates'))..createSync();
-    final fakeBasic = Directory(p.join(fakeTemplateRoot.path, 'flutter_webgl_basic'))
+    final fakeTemplateRoot = Directory(p.join(tmp.path, 'templates'))
       ..createSync();
+    final fakeBasic =
+        Directory(p.join(fakeTemplateRoot.path, 'flutter_webgl_basic'))
+          ..createSync();
     File(p.join(fakeBasic.path, 'flunity.yaml'))
         .writeAsStringSync('name: __app_name__\ntarget: webgl\n');
 
@@ -44,8 +46,10 @@ void main() {
   });
 
   test('rejects an existing directory', () async {
-    final fakeTemplateRoot = Directory(p.join(tmp.path, 'templates'))..createSync();
-    Directory(p.join(fakeTemplateRoot.path, 'flutter_webgl_basic')).createSync();
+    final fakeTemplateRoot = Directory(p.join(tmp.path, 'templates'))
+      ..createSync();
+    Directory(p.join(fakeTemplateRoot.path, 'flutter_webgl_basic'))
+        .createSync();
     Directory(p.join(tmp.path, 'taken')).createSync();
 
     final runner = CommandRunner<int>('flunity', 'test')
@@ -65,8 +69,10 @@ void main() {
   });
 
   test('rejects unsupported target', () async {
-    final fakeTemplateRoot = Directory(p.join(tmp.path, 'templates'))..createSync();
-    Directory(p.join(fakeTemplateRoot.path, 'flutter_webgl_basic')).createSync();
+    final fakeTemplateRoot = Directory(p.join(tmp.path, 'templates'))
+      ..createSync();
+    Directory(p.join(fakeTemplateRoot.path, 'flutter_webgl_basic'))
+        .createSync();
     final runner = CommandRunner<int>('flunity', 'test')
       ..addCommand(CreateCommand(
         logger: Logger(level: Level.quiet),
@@ -76,8 +82,10 @@ void main() {
   });
 
   test('rejects invalid app name', () async {
-    final fakeTemplateRoot = Directory(p.join(tmp.path, 'templates'))..createSync();
-    Directory(p.join(fakeTemplateRoot.path, 'flutter_webgl_basic')).createSync();
+    final fakeTemplateRoot = Directory(p.join(tmp.path, 'templates'))
+      ..createSync();
+    Directory(p.join(fakeTemplateRoot.path, 'flutter_webgl_basic'))
+        .createSync();
     final runner = CommandRunner<int>('flunity', 'test')
       ..addCommand(CreateCommand(
         logger: Logger(level: Level.quiet),

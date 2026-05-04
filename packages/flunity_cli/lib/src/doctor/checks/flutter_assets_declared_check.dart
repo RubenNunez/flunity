@@ -13,12 +13,12 @@ class FlutterAssetsDeclaredCheck implements Check {
 
   @override
   Future<CheckResult> run() async {
-    final pubspec =
-        File(p.join(project.paths.flutterApp, 'pubspec.yaml'));
+    final pubspec = File(p.join(project.paths.flutterApp, 'pubspec.yaml'));
     if (!pubspec.existsSync()) {
       return CheckResult.fail(
         'pubspec.yaml not found at ${pubspec.path}',
-        hint: 'Run `fl create` from scratch, or add a Flutter app at this path.',
+        hint:
+            'Run `fl create` from scratch, or add a Flutter app at this path.',
       );
     }
     final content = pubspec.readAsStringSync();

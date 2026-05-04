@@ -38,15 +38,18 @@ bridge:
   messages: []
 ''');
 
-    final project = FlunityProject.loadFromManifest(p.join(tmp.path, 'flunity.yaml'));
+    final project =
+        FlunityProject.loadFromManifest(p.join(tmp.path, 'flunity.yaml'));
 
     expect(project.name, 'my_app');
     expect(project.version, '0.1.0');
     expect(project.target, FlunityTarget.webgl);
     expect(project.paths.flutterApp, p.join(tmp.path, 'flutter_app'));
     expect(project.paths.unityProject, p.join(tmp.path, 'unity_project'));
-    expect(project.paths.unityBuild, p.join(tmp.path, 'unity_project/Builds/WebGL'));
-    expect(project.paths.flutterAssets, p.join(tmp.path, 'flutter_app/assets/unity_webgl'));
+    expect(project.paths.unityBuild,
+        p.join(tmp.path, 'unity_project/Builds/WebGL'));
+    expect(project.paths.flutterAssets,
+        p.join(tmp.path, 'flutter_app/assets/unity_webgl'));
     expect(project.webgl.devServer.host, '127.0.0.1');
     expect(project.webgl.devServer.port, 8080);
     expect(project.webgl.devServer.crossOriginIsolation, true);
@@ -61,7 +64,8 @@ name: minimal
 target: webgl
 ''');
 
-    final project = FlunityProject.loadFromManifest(p.join(tmp.path, 'flunity.yaml'));
+    final project =
+        FlunityProject.loadFromManifest(p.join(tmp.path, 'flunity.yaml'));
 
     expect(project.paths.flutterApp, p.join(tmp.path, 'flutter_app'));
     expect(project.paths.unityProject, p.join(tmp.path, 'unity_project'));

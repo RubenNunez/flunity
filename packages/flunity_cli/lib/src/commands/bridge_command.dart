@@ -21,14 +21,16 @@ class BridgeCommand extends Command<int> {
 
 class _InitSubcommand extends Command<int> {
   _InitSubcommand({required Logger logger}) : _logger = logger {
-    argParser.addFlag('force', defaultsTo: false, help: 'Overwrite existing files.');
+    argParser.addFlag('force',
+        defaultsTo: false, help: 'Overwrite existing files.');
   }
   final Logger _logger;
 
   @override
   String get name => 'init';
   @override
-  String get description => 'Initialize the Flunity bridge in the current project.';
+  String get description =>
+      'Initialize the Flunity bridge in the current project.';
 
   @override
   Future<int> run() async {
@@ -51,7 +53,8 @@ class _InitSubcommand extends Command<int> {
       _logger.info('  + $file');
     }
     if (summary.indexHtmlPatched) {
-      _logger.success('Patched Unity index.html with flunity_bridge.js include');
+      _logger
+          .success('Patched Unity index.html with flunity_bridge.js include');
     }
     if (summary.filesCreated.isEmpty &&
         !summary.depAdded &&
