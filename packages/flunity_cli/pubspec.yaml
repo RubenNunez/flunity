@@ -15,6 +15,7 @@ executables:
 
 dependencies:
   args: ^2.5.0
+  crypto: ^3.0.5
   http_multi_server: ^3.2.1
   mason_logger: ^0.3.0
   mime: ^1.0.5
