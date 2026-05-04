@@ -10,8 +10,6 @@ environment:
 
 executables:
   flunity:
-  fl: flunity
-  fu: flunity
 
 dependencies:
   args: ^2.5.0

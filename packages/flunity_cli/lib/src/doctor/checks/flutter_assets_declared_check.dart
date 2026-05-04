@@ -18,7 +18,7 @@ class FlutterAssetsDeclaredCheck implements Check {
       return CheckResult.fail(
         'pubspec.yaml not found at ${pubspec.path}',
         hint:
-            'Run `fl create` from scratch, or add a Flutter app at this path.',
+            'Run `flunity create` from scratch, or add a Flutter app at this path.',
       );
     }
     final content = pubspec.readAsStringSync();

@@ -14,7 +14,7 @@ class ManifestPresentCheck implements Check {
     if (found == null) {
       return CheckResult.fail(
         'No flunity.yaml found from $cwd upward.',
-        hint: 'Run `fl create <name>` to scaffold a project.',
+        hint: 'Run `flunity create <name>` to scaffold a project.',
       );
     }
     return CheckResult.ok('Found at $found');

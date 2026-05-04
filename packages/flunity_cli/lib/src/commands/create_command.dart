@@ -110,11 +110,11 @@ class CreateCommand extends Command<int> {
       ..info('')
       ..success('Created $appName/. Next steps:')
       ..info('  1. cd $appName')
-      ..info('  2. fl doctor                            # verify environment')
+      ..info('  2. flunity doctor                       # verify environment')
       ..info(
         '  3. open unity_project/ in Unity, build WebGL → unity_project/Builds/WebGL/',
       )
-      ..info('  4. fl webgl serve                       # start dev server')
+      ..info('  4. flunity webgl serve                  # start dev server')
       ..info(
         '  5. cd flutter_app && flutter run --dart-define=FLUNITY_MODE=dev',
       );

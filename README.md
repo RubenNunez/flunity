@@ -10,7 +10,7 @@ Flunity is a development companion for Flutter + Unity projects. The first suppo
 
 | Package | Description |
 | --- | --- |
-| [`flunity_cli`](packages/flunity_cli) | The `flunity` executable (and `fl` / `fu` aliases): scaffolding, dev server, asset bundling, bridge init. |
+| [`flunity_cli`](packages/flunity_cli) | The `flunity` executable: scaffolding, dev server, asset bundling, bridge init. |
 | [`flunity_bridge`](packages/flunity_bridge) | Flutter package: `FlunityWebGLView`, controller, message types, dev/bundled config. |
 
 ## How to
@@ -21,20 +21,17 @@ Flunity is a development companion for Flutter + Unity projects. The first suppo
 dart pub global activate flunity_cli
 ```
 
-This installs three commands. They all do the same thing — pick whichever is easiest to type:
+Make sure `$HOME/.pub-cache/bin` is on your PATH. Verify with:
 
-| Command | Purpose |
-| --- | --- |
-| `flunity` | canonical name (use in scripts, CI, docs) |
-| `fl` | short alias |
-| `fu` | short alias |
-
-Make sure `$HOME/.pub-cache/bin` is on your PATH. Verify with `fl --version`.
+```bash
+flunity --version
+# flunity 0.1.0
+```
 
 ### 2. Scaffold a project
 
 ```bash
-fl create my_app
+flunity create my_app
 cd my_app
 ```
 
@@ -50,7 +47,7 @@ my_app/
 ### 3. Verify your environment
 
 ```bash
-fl doctor
+flunity doctor
 ```
 
 This checks Flutter SDK, Dart SDK, the manifest, your Unity project layout, and that the dev server port is free. Each row has ✓/⚠/✗ and a hint.
@@ -64,7 +61,7 @@ Open `my_app/unity_project/` in Unity 2022.3 LTS (or newer). Build the WebGL tar
 In one terminal:
 
 ```bash
-fl webgl serve
+flunity webgl serve
 # Serving http://127.0.0.1:8080/
 ```
 
@@ -82,12 +79,12 @@ The Flutter app boots, loads `http://127.0.0.1:8080/index.html` in a WebView, an
 ### 6. Build for production
 
 ```bash
-fl webgl copy
+flunity webgl copy
 cd flutter_app
 flutter build apk     # or appbundle, ipa, etc.
 ```
 
-`fl webgl copy` packages the Unity build into `flutter_app/assets/unity_webgl/`. Bundled mode is the Flutter default; the production app loads Unity from inside the asset bundle via a process-local HTTP loopback (Unity WebGL refuses to load via `file://`).
+`flunity webgl copy` packages the Unity build into `flutter_app/assets/unity_webgl/`. Bundled mode is the Flutter default; the production app loads Unity from inside the asset bundle via a process-local HTTP loopback (Unity WebGL refuses to load via `file://`).
 
 ## Documentation
 
