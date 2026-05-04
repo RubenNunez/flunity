@@ -1,0 +1,27 @@
+name: flunity
+repository: https://github.com/RubenNunez/flunity
+
+packages:
+  - packages/**
+  - examples/**
+
+command:
+  bootstrap:
+    runPubGetInParallel: true
+  version:
+    branch: main
+    workspaceChangelog: true
+
+scripts:
+  analyze:
+    description: Analyze every package
+    run: melos exec -- "dart analyze ."
+  test:
+    description: Run tests in every package
+    run: melos exec --dir-exists=test -- "flutter test"
+  format:
+    description: Format every Dart file
+    run: melos exec -- "dart format ."
+  format-check:
+    description: Check formatting (CI)
+    run: melos exec -- "dart format --output=none --set-exit-if-changed ."
