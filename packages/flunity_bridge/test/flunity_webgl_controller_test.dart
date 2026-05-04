@@ -23,7 +23,8 @@ void main() {
     await pending;
 
     expect(transport.sentMessages, hasLength(1));
-    final decoded = jsonDecode(transport.sentMessages.first) as Map<String, Object?>;
+    final decoded =
+        jsonDecode(transport.sentMessages.first) as Map<String, Object?>;
     expect(decoded['type'], 'ping');
     expect(decoded['payload'], {'nonce': 'q'});
   });

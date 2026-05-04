@@ -18,7 +18,8 @@ final class FlunityWebGLConfig {
         port = 0,
         androidEmulatorHost = '';
 
-  factory FlunityWebGLConfig.bundled({String assetPath = 'assets/unity_webgl/'}) {
+  factory FlunityWebGLConfig.bundled(
+      {String assetPath = 'assets/unity_webgl/'}) {
     final normalized = assetPath.endsWith('/') ? assetPath : '$assetPath/';
     return FlunityWebGLConfig._bundled(normalized);
   }

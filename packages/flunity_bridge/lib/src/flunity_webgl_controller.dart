@@ -53,7 +53,8 @@ class FlunityWebGLController {
       final decoded = jsonDecode(json);
       if (decoded is! Map<String, Object?>) {
         _messages.addError(
-          FormatException('Expected JSON object from Unity, got ${decoded.runtimeType}'),
+          FormatException(
+              'Expected JSON object from Unity, got ${decoded.runtimeType}'),
         );
         return;
       }

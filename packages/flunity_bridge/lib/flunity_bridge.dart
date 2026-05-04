@@ -10,7 +10,8 @@ export 'package:flunity_bridge/src/flunity_message.dart';
 export 'package:flunity_bridge/src/flunity_webgl_config.dart';
 export 'package:flunity_bridge/src/flunity_webgl_controller.dart';
 export 'package:flunity_bridge/src/flunity_webgl_view.dart';
-export 'package:flunity_bridge/src/messages/built_in.dart' show registerBuiltInMessages;
+export 'package:flunity_bridge/src/messages/built_in.dart'
+    show registerBuiltInMessages;
 export 'package:flunity_bridge/src/messages/load_scene.dart';
 export 'package:flunity_bridge/src/messages/ping.dart';
 export 'package:flunity_bridge/src/messages/pong.dart';

@@ -18,13 +18,15 @@ abstract class FlunityMessage {
   static FlunityMessage fromJson(Map<String, Object?> json) {
     final dynamic rawType = json['type'];
     if (rawType is! String) {
-      throw const FormatException('FlunityMessage requires a string "type" field');
+      throw const FormatException(
+          'FlunityMessage requires a string "type" field');
     }
     final Map<String, Object?> payload = switch (json['payload']) {
       final Map<String, Object?> map => map,
       final Map<dynamic, dynamic> map => map.cast<String, Object?>(),
       null => const <String, Object?>{},
-      _ => throw const FormatException('FlunityMessage "payload" must be a JSON object'),
+      _ => throw const FormatException(
+          'FlunityMessage "payload" must be a JSON object'),
     };
     final factory = _registry[rawType];
     if (factory != null) {
@@ -33,8 +35,8 @@ abstract class FlunityMessage {
     return RawMessage(type: rawType, payload: payload);
   }
 
-  static final Map<String, FlunityMessage Function(Map<String, Object?>)> _registry =
-      <String, FlunityMessage Function(Map<String, Object?>)>{};
+  static final Map<String, FlunityMessage Function(Map<String, Object?>)>
+      _registry = <String, FlunityMessage Function(Map<String, Object?>)>{};
 
   /// Registers a factory for a typed message subclass. Used by built-in message
   /// classes; callers can register their own types too (overrides allowed).
@@ -75,5 +77,5 @@ bool _mapEquals(Map<String, Object?> a, Map<String, Object?> b) {
   return true;
 }
 
-int _mapHash(Map<String, Object?> map) =>
-    Object.hashAllUnordered(map.entries.map((e) => Object.hash(e.key, e.value)));
+int _mapHash(Map<String, Object?> map) => Object.hashAllUnordered(
+    map.entries.map((e) => Object.hash(e.key, e.value)));

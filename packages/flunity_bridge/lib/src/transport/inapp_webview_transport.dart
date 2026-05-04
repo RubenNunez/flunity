@@ -12,7 +12,8 @@ class InAppWebViewMessageTransport implements MessageTransport {
 
   InAppWebViewController? _webViewController;
   final Completer<void> _ready = Completer<void>();
-  final StreamController<String> _incoming = StreamController<String>.broadcast();
+  final StreamController<String> _incoming =
+      StreamController<String>.broadcast();
   final Queue<String> _pending = Queue<String>();
   bool _disposed = false;
 
@@ -82,7 +83,8 @@ class InAppWebViewMessageTransport implements MessageTransport {
     final controller = _webViewController;
     if (controller == null) return;
     final escaped = _jsString(json);
-    await controller.evaluateJavascript(source: 'window.flunity.post($escaped);');
+    await controller.evaluateJavascript(
+        source: 'window.flunity.post($escaped);');
   }
 
   static String _jsString(String value) {

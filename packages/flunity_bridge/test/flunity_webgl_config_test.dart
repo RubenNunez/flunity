@@ -22,7 +22,9 @@ void main() {
       expect(c.port, 9000);
     });
 
-    test('resolveBaseUrl(): substitutes androidEmulatorHost when host is loopback on Android', () {
+    test(
+        'resolveBaseUrl(): substitutes androidEmulatorHost when host is loopback on Android',
+        () {
       const c = FlunityWebGLConfig.dev();
       expect(
         c.resolveBaseUrl(platform: TargetPlatform.android),
@@ -32,11 +34,15 @@ void main() {
 
     test('resolveBaseUrl(): keeps 127.0.0.1 on iOS / desktop', () {
       const c = FlunityWebGLConfig.dev();
-      expect(c.resolveBaseUrl(platform: TargetPlatform.iOS), 'http://127.0.0.1:8080/');
-      expect(c.resolveBaseUrl(platform: TargetPlatform.macOS), 'http://127.0.0.1:8080/');
+      expect(c.resolveBaseUrl(platform: TargetPlatform.iOS),
+          'http://127.0.0.1:8080/');
+      expect(c.resolveBaseUrl(platform: TargetPlatform.macOS),
+          'http://127.0.0.1:8080/');
     });
 
-    test('resolveBaseUrl(): does NOT substitute when host is non-loopback (LAN)', () {
+    test(
+        'resolveBaseUrl(): does NOT substitute when host is non-loopback (LAN)',
+        () {
       const c = FlunityWebGLConfig.dev(host: '192.168.1.10');
       expect(
         c.resolveBaseUrl(platform: TargetPlatform.android),

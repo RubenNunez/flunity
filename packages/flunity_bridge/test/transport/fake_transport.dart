@@ -10,7 +10,8 @@ class FakeMessageTransport implements MessageTransport {
   }
 
   final List<String> sentMessages = <String>[];
-  final StreamController<String> _incoming = StreamController<String>.broadcast();
+  final StreamController<String> _incoming =
+      StreamController<String>.broadcast();
   final Completer<void> _ready = Completer<void>();
   bool _disposed = false;
   int reloadCount = 0;

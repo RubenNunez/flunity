@@ -72,7 +72,8 @@ class _FlunityWebGLViewState extends State<FlunityWebGLView> {
 
   WebUri _initialUri() {
     if (widget.config.mode == FlunityWebGLMode.dev) {
-      final base = widget.config.resolveBaseUrl(platform: defaultTargetPlatform);
+      final base =
+          widget.config.resolveBaseUrl(platform: defaultTargetPlatform);
       return WebUri('${base}index.html');
     }
     // Bundled: InAppLocalhostServer's documentRoot is 'assets', so URLs are
@@ -98,7 +99,8 @@ class _FlunityWebGLViewState extends State<FlunityWebGLView> {
           ? builder(context, _error!)
           : Center(child: Text('Flunity error: $_error'));
     }
-    if (widget.config.mode == FlunityWebGLMode.bundled && !_bundledServerStarted) {
+    if (widget.config.mode == FlunityWebGLMode.bundled &&
+        !_bundledServerStarted) {
       return widget.loadingBuilder?.call(context) ??
           const Center(child: CircularProgressIndicator());
     }

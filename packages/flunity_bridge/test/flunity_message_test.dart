@@ -10,7 +10,10 @@ void main() {
   group('RawMessage', () {
     test('serializes to {type, payload} envelope', () {
       const msg = RawMessage(type: 'custom', payload: {'a': 1});
-      expect(msg.toJson(), {'type': 'custom', 'payload': {'a': 1}});
+      expect(msg.toJson(), {
+        'type': 'custom',
+        'payload': {'a': 1}
+      });
     });
 
     test('round-trips via fromJson', () {
@@ -39,10 +42,14 @@ void main() {
     setUp(registerBuiltInMessages);
 
     test('Ping/Pong/LoadScene/SceneReady all parse via fromJson', () {
-      expect(FlunityMessage.fromJson(const Ping(nonce: 'a').toJson()), isA<Ping>());
-      expect(FlunityMessage.fromJson(const Pong(nonce: 'a').toJson()), isA<Pong>());
-      expect(FlunityMessage.fromJson(const LoadScene(scene: 's').toJson()), isA<LoadScene>());
-      expect(FlunityMessage.fromJson(const SceneReady().toJson()), isA<SceneReady>());
+      expect(FlunityMessage.fromJson(const Ping(nonce: 'a').toJson()),
+          isA<Ping>());
+      expect(FlunityMessage.fromJson(const Pong(nonce: 'a').toJson()),
+          isA<Pong>());
+      expect(FlunityMessage.fromJson(const LoadScene(scene: 's').toJson()),
+          isA<LoadScene>());
+      expect(FlunityMessage.fromJson(const SceneReady().toJson()),
+          isA<SceneReady>());
     });
 
     test('unknown type still falls back to RawMessage', () {
