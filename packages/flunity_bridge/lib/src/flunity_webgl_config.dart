@@ -20,6 +20,13 @@ final class FlunityWebGLConfig {
 
   factory FlunityWebGLConfig.bundled(
       {String assetPath = 'assets/unity_webgl/'}) {
+    if (!assetPath.startsWith('assets/')) {
+      throw ArgumentError.value(
+        assetPath,
+        'assetPath',
+        'must start with "assets/" — bundled mode serves from the Flutter asset bundle',
+      );
+    }
     final normalized = assetPath.endsWith('/') ? assetPath : '$assetPath/';
     return FlunityWebGLConfig._bundled(normalized);
   }

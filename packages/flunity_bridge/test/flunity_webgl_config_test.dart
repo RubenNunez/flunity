@@ -64,5 +64,20 @@ void main() {
         'assets/foo/',
       );
     });
+
+    test('rejects assetPath that does not start with "assets/"', () {
+      expect(
+        () => FlunityWebGLConfig.bundled(assetPath: 'unity_webgl/'),
+        throwsA(isA<ArgumentError>()),
+      );
+      expect(
+        () => FlunityWebGLConfig.bundled(assetPath: ''),
+        throwsA(isA<ArgumentError>()),
+      );
+      expect(
+        () => FlunityWebGLConfig.bundled(assetPath: '/assets/foo/'),
+        throwsA(isA<ArgumentError>()),
+      );
+    });
   });
 }

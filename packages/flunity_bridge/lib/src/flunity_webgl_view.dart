@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flunity_bridge/src/flunity_message.dart';
 import 'package:flunity_bridge/src/flunity_webgl_config.dart';
 import 'package:flunity_bridge/src/flunity_webgl_controller.dart';
@@ -87,7 +89,7 @@ class _FlunityWebGLViewState extends State<FlunityWebGLView> {
 
   @override
   void dispose() {
-    _controller?.dispose();
+    unawaited(_controller?.dispose());
     super.dispose();
   }
 
