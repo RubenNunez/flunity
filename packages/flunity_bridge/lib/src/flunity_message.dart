@@ -22,6 +22,7 @@ abstract class FlunityMessage {
     }
     final Map<String, Object?> payload = switch (json['payload']) {
       final Map<String, Object?> map => map,
+      final Map<dynamic, dynamic> map => map.cast<String, Object?>(),
       null => const <String, Object?>{},
       _ => throw const FormatException('FlunityMessage "payload" must be a JSON object'),
     };
