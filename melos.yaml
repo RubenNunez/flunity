@@ -18,7 +18,7 @@ scripts:
     run: melos exec -- "dart analyze ."
   test:
     description: Run tests in every package
-    run: melos exec --dir-exists=test -- "flutter test"
+    run: 'melos exec --dir-exists=test -- "if grep -q ''sdk: flutter'' pubspec.yaml; then flutter test; else dart test; fi"'
   format:
     description: Format every Dart file
     run: melos exec -- "dart format ."
