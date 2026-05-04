@@ -1,0 +1,21 @@
+name: __app_name__
+version: 0.1.0
+target: webgl
+
+paths:
+  flutter_app: flutter_app
+  unity_project: unity_project
+  unity_build: unity_project/Builds/WebGL
+  flutter_assets: flutter_app/assets/unity_webgl
+
+webgl:
+  dev_server:
+    host: 127.0.0.1
+    port: 8080
+    cross_origin_isolation: true
+    hot_reload: false
+  android_emulator_host: 10.0.2.2
+
+bridge:
+  enabled: true
+  messages: []

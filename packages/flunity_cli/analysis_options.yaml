@@ -2,6 +2,11 @@ include: package:lints/recommended.yaml
 
 # CLI is pure Dart — uses lints instead of flutter_lints.
 analyzer:
+  exclude:
+    # Template sources are scaffolded Flutter code; analysing them as part of
+    # the CLI package would produce false errors (Flutter/flunity_bridge deps
+    # are not available here).
+    - templates/**
   language:
     strict-casts: true
     strict-inference: true
