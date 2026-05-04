@@ -1,6 +1,6 @@
 # flunity_bridge
 
-Flutter package providing the runtime side of [Flunity](https://github.com/RubenNunez/flunity): a `FlunityWebGLView` widget, a controller, sealed `FlunityMessage` types, and a dev/bundled config switch for running Unity WebGL inside Flutter.
+Flutter package providing the runtime side of [Flunity](https://github.com/RubenNunez/flunity): a `FlunityWebGLView` widget, a controller, typed `FlunityMessage` types, and a dev/bundled config switch for running Unity WebGL inside Flutter.
 
 Use the `flunity_cli` tool to scaffold projects that consume this package.
 
@@ -9,6 +9,12 @@ Use the `flunity_cli` tool to scaffold projects that consume this package.
 ```dart
 import 'package:flunity_bridge/flunity_bridge.dart';
 
+void main() {
+  registerBuiltInMessages(); // <-- call once at startup
+  runApp(const MyApp());
+}
+
+// Inside a screen:
 FlunityWebGLView(
   config: const FlunityWebGLConfig.dev(port: 8080),
   onReady: (controller) {
