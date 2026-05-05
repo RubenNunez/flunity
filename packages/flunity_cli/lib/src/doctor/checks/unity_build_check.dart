@@ -20,6 +20,12 @@ class UnityBuildCheck implements Check {
         hint: 'Build WebGL from Unity into ${project.paths.unityBuild}/.',
       );
     }
-    return CheckResult.ok('Found at ${indexHtml.path}');
+    final content = indexHtml.readAsStringSync();
+    if (!content.contains('flunity:patch')) {
+      return CheckResult.ok(
+        'Found at ${indexHtml.path} (will auto-prepare on `flunity webgl serve`)',
+      );
+    }
+    return CheckResult.ok('Found at ${indexHtml.path} (prepared)');
   }
 }

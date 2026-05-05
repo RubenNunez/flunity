@@ -5,14 +5,17 @@ import 'package:args/command_runner.dart';
 import 'package:flunity_cli/src/manifest/flunity_project.dart';
 import 'package:flunity_cli/src/manifest/manifest_finder.dart';
 import 'package:flunity_cli/src/webgl/dev_server.dart';
+import 'package:flunity_cli/src/webgl/prepare_webgl.dart';
 import 'package:flunity_cli/src/webgl/webgl_copy.dart';
 import 'package:mason_logger/mason_logger.dart';
+import 'package:path/path.dart' as p;
 
 class WebGLCommand extends Command<int> {
   WebGLCommand({required Logger logger}) : _logger = logger {
     addSubcommand(_ServeSubcommand(logger: _logger));
     addSubcommand(_CopySubcommand(logger: _logger));
     addSubcommand(_CleanSubcommand(logger: _logger));
+    addSubcommand(_PrepareSubcommand(logger: _logger));
   }
 
   final Logger _logger;
@@ -53,6 +56,18 @@ class _ServeSubcommand extends Command<int> {
       _logger.info('Build WebGL from Unity, then re-run.');
       return 1;
     }
+
+    final shimSourcePath = p.join(
+      project.paths.unityProject,
+      'Assets',
+      'Plugins',
+      'WebGL',
+      'flunity_bridge.js',
+    );
+    await prepareWebGLBuild(
+      buildDir: project.paths.unityBuild,
+      shimSourcePath: shimSourcePath,
+    );
 
     final server = await UnityDevServer.start(
       rootDir: project.paths.unityBuild,
@@ -108,6 +123,16 @@ class _CopySubcommand extends Command<int> {
   Future<int> run() async {
     final project = _loadProjectOrDie(_logger);
     if (project == null) return 64;
+    await prepareWebGLBuild(
+      buildDir: project.paths.unityBuild,
+      shimSourcePath: p.join(
+        project.paths.unityProject,
+        'Assets',
+        'Plugins',
+        'WebGL',
+        'flunity_bridge.js',
+      ),
+    );
     try {
       final summary = await copyWebGLBuild(
         project: project,
@@ -149,6 +174,43 @@ class _CleanSubcommand extends Command<int> {
       entity.deleteSync(recursive: true);
     }
     _logger.success('Cleaned ${destination.path}');
+    return 0;
+  }
+}
+
+class _PrepareSubcommand extends Command<int> {
+  _PrepareSubcommand({required Logger logger}) : _logger = logger;
+  final Logger _logger;
+
+  @override
+  String get name => 'prepare';
+  @override
+  String get description =>
+      'Patch the Unity WebGL build (index.html + JS shim) for the Flunity bridge.';
+
+  @override
+  Future<int> run() async {
+    final project = _loadProjectOrDie(_logger);
+    if (project == null) return 64;
+    final summary = await prepareWebGLBuild(
+      buildDir: project.paths.unityBuild,
+      shimSourcePath: p.join(
+        project.paths.unityProject,
+        'Assets',
+        'Plugins',
+        'WebGL',
+        'flunity_bridge.js',
+      ),
+    );
+    if (summary.shimCopied) {
+      _logger.info('Copied flunity_bridge.js into build dir');
+    }
+    if (summary.indexHtmlPatched) {
+      _logger.info('Patched index.html with bridge wiring');
+    }
+    if (!summary.shimCopied && !summary.indexHtmlPatched) {
+      _logger.info('Build already prepared.');
+    }
     return 0;
   }
 }
