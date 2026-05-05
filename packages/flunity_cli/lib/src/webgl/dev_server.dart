@@ -54,6 +54,15 @@ shelf.Handler _buildHandler(String rootDir) {
     if (precompressed != null) {
       headers[HttpHeaders.contentEncodingHeader] = precompressed.encoding;
       headers[HttpHeaders.varyHeader] = 'Accept-Encoding';
+    } else {
+      // The URL itself ends in .br or .gz (Unity's compressed builds reference
+      // files by their compressed name directly). Set Content-Encoding so the
+      // browser decompresses on the fly instead of treating the bytes as opaque.
+      final encoding = unityContentEncoding(p.basename(filePath));
+      if (encoding != null) {
+        headers[HttpHeaders.contentEncodingHeader] = encoding;
+        headers[HttpHeaders.varyHeader] = 'Accept-Encoding';
+      }
     }
     headers[HttpHeaders.cacheControlHeader] = 'no-store';
 
