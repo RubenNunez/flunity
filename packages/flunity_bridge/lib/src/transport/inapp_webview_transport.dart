@@ -84,7 +84,8 @@ class InAppWebViewMessageTransport implements MessageTransport {
     if (controller == null) return;
     final escaped = _jsString(json);
     await controller.evaluateJavascript(
-        source: 'window.flunity.post($escaped);');
+      source: 'window.flunity.post($escaped);',
+    );
   }
 
   static String _jsString(String value) {

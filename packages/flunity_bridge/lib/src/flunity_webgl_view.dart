@@ -35,8 +35,9 @@ class FlunityWebGLView extends StatefulWidget {
 }
 
 class _FlunityWebGLViewState extends State<FlunityWebGLView> {
-  static final InAppLocalhostServer _bundledServer =
-      InAppLocalhostServer(documentRoot: 'assets');
+  static final InAppLocalhostServer _bundledServer = InAppLocalhostServer(
+    documentRoot: 'assets',
+  );
 
   late final InAppWebViewMessageTransport _transport;
   FlunityWebGLController? _controller;
@@ -80,8 +81,9 @@ class _FlunityWebGLViewState extends State<FlunityWebGLView> {
 
   WebUri _initialUri() {
     if (widget.config.mode == FlunityWebGLMode.dev) {
-      final base =
-          widget.config.resolveBaseUrl(platform: defaultTargetPlatform);
+      final base = widget.config.resolveBaseUrl(
+        platform: defaultTargetPlatform,
+      );
       return WebUri('${base}index.html');
     }
     // Bundled: InAppLocalhostServer's documentRoot is 'assets', so URLs are
@@ -126,7 +128,8 @@ class _FlunityWebGLViewState extends State<FlunityWebGLView> {
       },
       onLoadStop: (controller, url) async {
         // Wait for window.flunity.ready() to be called by the JS shim.
-        await controller.evaluateJavascript(source: '''
+        await controller.evaluateJavascript(
+          source: '''
           if (window.flunity && window.flunity._isReady) {
             window.flutter_inappwebview.callHandler('flunity_ready');
           } else {
@@ -134,7 +137,8 @@ class _FlunityWebGLViewState extends State<FlunityWebGLView> {
               window.flutter_inappwebview.callHandler('flunity_ready');
             };
           }
-        ''');
+        ''',
+        );
       },
     );
   }

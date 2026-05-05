@@ -11,33 +11,42 @@ void main() {
   tearDown(() => tmp.deleteSync(recursive: true));
 
   test('copies build dir to flutter_assets and writes manifest hash', () async {
-    File(p.join(tmp.path, 'flunity.yaml'))
-        .writeAsStringSync('name: x\ntarget: webgl');
+    File(
+      p.join(tmp.path, 'flunity.yaml'),
+    ).writeAsStringSync('name: x\ntarget: webgl');
     final buildDir = Directory(p.join(tmp.path, 'unity_project/Builds/WebGL'))
       ..createSync(recursive: true);
     File(p.join(buildDir.path, 'index.html')).writeAsStringSync('<html/>');
     File(p.join(buildDir.path, 'app.wasm')).writeAsBytesSync(<int>[1, 2, 3]);
 
-    final project =
-        FlunityProject.loadFromManifest(p.join(tmp.path, 'flunity.yaml'));
+    final project = FlunityProject.loadFromManifest(
+      p.join(tmp.path, 'flunity.yaml'),
+    );
     final summary = await copyWebGLBuild(project: project);
 
     expect(summary.fileCount, 2);
     expect(summary.totalBytes, greaterThan(0));
-    expect(File(p.join(project.paths.flutterAssets, 'index.html')).existsSync(),
-        isTrue);
-    expect(File(p.join(project.paths.flutterAssets, 'app.wasm')).existsSync(),
-        isTrue);
     expect(
-        File(p.join(project.paths.flutterAssets, 'flunity_webgl_manifest.json'))
-            .existsSync(),
-        isTrue);
+      File(p.join(project.paths.flutterAssets, 'index.html')).existsSync(),
+      isTrue,
+    );
+    expect(
+      File(p.join(project.paths.flutterAssets, 'app.wasm')).existsSync(),
+      isTrue,
+    );
+    expect(
+      File(
+        p.join(project.paths.flutterAssets, 'flunity_webgl_manifest.json'),
+      ).existsSync(),
+      isTrue,
+    );
     expect(summary.buildHash.length, 64);
   });
 
   test('clean=true removes prior contents (except .gitkeep)', () async {
-    File(p.join(tmp.path, 'flunity.yaml'))
-        .writeAsStringSync('name: x\ntarget: webgl');
+    File(
+      p.join(tmp.path, 'flunity.yaml'),
+    ).writeAsStringSync('name: x\ntarget: webgl');
     final buildDir = Directory(p.join(tmp.path, 'unity_project/Builds/WebGL'))
       ..createSync(recursive: true);
     File(p.join(buildDir.path, 'index.html')).writeAsStringSync('<html/>');
@@ -47,8 +56,9 @@ void main() {
     File(p.join(dest.path, 'old.txt')).writeAsStringSync('old');
     File(p.join(dest.path, '.gitkeep')).writeAsStringSync('');
 
-    final project =
-        FlunityProject.loadFromManifest(p.join(tmp.path, 'flunity.yaml'));
+    final project = FlunityProject.loadFromManifest(
+      p.join(tmp.path, 'flunity.yaml'),
+    );
     await copyWebGLBuild(project: project, clean: true);
 
     expect(File(p.join(dest.path, 'old.txt')).existsSync(), isFalse);
@@ -57,10 +67,12 @@ void main() {
   });
 
   test('throws when build dir is missing', () async {
-    File(p.join(tmp.path, 'flunity.yaml'))
-        .writeAsStringSync('name: x\ntarget: webgl');
-    final project =
-        FlunityProject.loadFromManifest(p.join(tmp.path, 'flunity.yaml'));
+    File(
+      p.join(tmp.path, 'flunity.yaml'),
+    ).writeAsStringSync('name: x\ntarget: webgl');
+    final project = FlunityProject.loadFromManifest(
+      p.join(tmp.path, 'flunity.yaml'),
+    );
     expect(
       () => copyWebGLBuild(project: project),
       throwsA(isA<WebGLCopyException>()),

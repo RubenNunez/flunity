@@ -15,9 +15,9 @@ class CreateCommand extends Command<int> {
     required Logger logger,
     String? templateRootOverride,
     bool skipFlutterCreate = false,
-  })  : _logger = logger,
-        _templateRootOverride = templateRootOverride,
-        _skipFlutterCreate = skipFlutterCreate {
+  }) : _logger = logger,
+       _templateRootOverride = templateRootOverride,
+       _skipFlutterCreate = skipFlutterCreate {
     argParser
       ..addOption(
         'target',
@@ -36,7 +36,8 @@ class CreateCommand extends Command<int> {
       )
       ..addOption(
         'bridge-path',
-        help: 'Absolute path to a local flunity_bridge package. '
+        help:
+            'Absolute path to a local flunity_bridge package. '
             'When omitted, Flunity tries to auto-detect from the activated CLI location. '
             'Once flunity_bridge is on pub.dev, this option will go away.',
       );
@@ -129,12 +130,13 @@ class CreateCommand extends Command<int> {
       final bridgePath =
           (argResults!['bridge-path'] as String?) ?? _detectFlunityBridgePath();
       if (bridgePath != null) {
-        File(p.join(flutterAppDir, 'pubspec_overrides.yaml'))
-            .writeAsStringSync('''
+        File(p.join(flutterAppDir, 'pubspec_overrides.yaml')).writeAsStringSync(
+          '''
 dependency_overrides:
   flunity_bridge:
     path: $bridgePath
-''');
+''',
+        );
       } else {
         _logger.warn(
           'flunity_bridge path not detected; flutter create will fail '
@@ -149,20 +151,16 @@ dependency_overrides:
         'Generating platform projects via flutter create',
       );
       try {
-        await runOrThrow(
-          'flutter',
-          [
-            'create',
-            '--org',
-            argResults!['org'] as String,
-            '--project-name',
-            appName,
-            '--platforms',
-            'ios,android,macos',
-            '.',
-          ],
-          workingDirectory: flutterAppDir,
-        );
+        await runOrThrow('flutter', [
+          'create',
+          '--org',
+          argResults!['org'] as String,
+          '--project-name',
+          appName,
+          '--platforms',
+          'ios,android,macos',
+          '.',
+        ], workingDirectory: flutterAppDir);
         flutterCreate.complete('Platform projects ready');
       } catch (e) {
         flutterCreate.fail();
@@ -180,11 +178,10 @@ dependency_overrides:
       // nothing changed, but Android manifest changes can affect pub).
       final pubGet = _logger.progress('flutter pub get');
       try {
-        await runOrThrow(
-          'flutter',
-          ['pub', 'get'],
-          workingDirectory: flutterAppDir,
-        );
+        await runOrThrow('flutter', [
+          'pub',
+          'get',
+        ], workingDirectory: flutterAppDir);
         pubGet.complete('Dependencies resolved');
       } catch (e) {
         pubGet.fail();

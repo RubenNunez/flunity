@@ -16,8 +16,9 @@ void main() {
   tearDown(() => tmp.deleteSync(recursive: true));
 
   test('manifest present check finds flunity.yaml', () async {
-    File(p.join(tmp.path, 'flunity.yaml'))
-        .writeAsStringSync('name: x\ntarget: webgl');
+    File(
+      p.join(tmp.path, 'flunity.yaml'),
+    ).writeAsStringSync('name: x\ntarget: webgl');
     final r = await ManifestPresentCheck(cwd: tmp.path).run();
     expect(r.severity, CheckSeverity.ok);
   });
@@ -28,41 +29,58 @@ void main() {
   });
 
   test('unity_project check', () async {
-    File(p.join(tmp.path, 'flunity.yaml'))
-        .writeAsStringSync('name: x\ntarget: webgl');
-    final project =
-        FlunityProject.loadFromManifest(p.join(tmp.path, 'flunity.yaml'));
-    expect((await UnityProjectCheck(project: project).run()).severity,
-        CheckSeverity.fail);
+    File(
+      p.join(tmp.path, 'flunity.yaml'),
+    ).writeAsStringSync('name: x\ntarget: webgl');
+    final project = FlunityProject.loadFromManifest(
+      p.join(tmp.path, 'flunity.yaml'),
+    );
+    expect(
+      (await UnityProjectCheck(project: project).run()).severity,
+      CheckSeverity.fail,
+    );
     Directory(p.join(tmp.path, 'unity_project')).createSync();
-    expect((await UnityProjectCheck(project: project).run()).severity,
-        CheckSeverity.ok);
+    expect(
+      (await UnityProjectCheck(project: project).run()).severity,
+      CheckSeverity.ok,
+    );
   });
 
   test('unity_build check warns without index.html', () async {
-    File(p.join(tmp.path, 'flunity.yaml'))
-        .writeAsStringSync('name: x\ntarget: webgl');
-    final project =
-        FlunityProject.loadFromManifest(p.join(tmp.path, 'flunity.yaml'));
-    expect((await UnityBuildCheck(project: project).run()).severity,
-        CheckSeverity.warn);
-    Directory(p.join(tmp.path, 'unity_project/Builds/WebGL'))
-        .createSync(recursive: true);
-    File(p.join(tmp.path, 'unity_project/Builds/WebGL/index.html'))
-        .writeAsStringSync('<html/>');
-    expect((await UnityBuildCheck(project: project).run()).severity,
-        CheckSeverity.ok);
+    File(
+      p.join(tmp.path, 'flunity.yaml'),
+    ).writeAsStringSync('name: x\ntarget: webgl');
+    final project = FlunityProject.loadFromManifest(
+      p.join(tmp.path, 'flunity.yaml'),
+    );
+    expect(
+      (await UnityBuildCheck(project: project).run()).severity,
+      CheckSeverity.warn,
+    );
+    Directory(
+      p.join(tmp.path, 'unity_project/Builds/WebGL'),
+    ).createSync(recursive: true);
+    File(
+      p.join(tmp.path, 'unity_project/Builds/WebGL/index.html'),
+    ).writeAsStringSync('<html/>');
+    expect(
+      (await UnityBuildCheck(project: project).run()).severity,
+      CheckSeverity.ok,
+    );
   });
 
   test('flutter_assets_declared check', () async {
-    File(p.join(tmp.path, 'flunity.yaml'))
-        .writeAsStringSync('name: x\ntarget: webgl');
-    final project =
-        FlunityProject.loadFromManifest(p.join(tmp.path, 'flunity.yaml'));
+    File(
+      p.join(tmp.path, 'flunity.yaml'),
+    ).writeAsStringSync('name: x\ntarget: webgl');
+    final project = FlunityProject.loadFromManifest(
+      p.join(tmp.path, 'flunity.yaml'),
+    );
     Directory(p.join(tmp.path, 'flutter_app')).createSync();
     final pubspec = File(p.join(tmp.path, 'flutter_app/pubspec.yaml'));
-    pubspec
-        .writeAsStringSync('name: a\nflutter:\n  uses-material-design: true\n');
+    pubspec.writeAsStringSync(
+      'name: a\nflutter:\n  uses-material-design: true\n',
+    );
     expect(
       (await FlutterAssetsDeclaredCheck(project: project).run()).severity,
       CheckSeverity.warn,

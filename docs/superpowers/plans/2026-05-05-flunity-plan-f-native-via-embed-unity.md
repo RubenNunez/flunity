@@ -30,8 +30,9 @@
 ## Prerequisites
 
 - Branch `feat/plan-f-native-via-embed` cut off `main`.
-- Unity 2022.3 LTS with **Android Build Support** AND **iOS Build Support** modules installed.
-- Xcode + iOS toolchain on macOS for iOS testing. Android Studio + NDK for Android testing.
+- **Unity 6.0 (6000.x)** with **Android Build Support** AND **iOS Build Support** modules installed. The vendored Android code derives from `flutter_embed_unity_6000_0_android` so Unity 6 is the floor for native targets. WebGL still works on older Unity versions but we don't test that path.
+- **Flutter 3.38+ / Dart 3.10+** — bumped from the earlier Plan A baselines (3.24 / 3.5).
+- **Xcode 26+** on macOS for iOS testing. **Android Studio** with **NDK 27+** for Android testing.
 - The user's existing webgl flow keeps working through every phase.
 
 ---
@@ -409,11 +410,7 @@ The package's Android code typically does:
 - Bridges `MethodChannel` calls into `UnityPlayer.UnitySendMessage(...)`.
 - Calls back via `IUnityMessageManager` or similar.
 
-**Important**: the upstream package is named `_6000_0_android` because it targets Unity 6. For Unity 2022.3 LTS support, two options:
-- (a) The 6000_0 code might just work for 2022.3 builds; test it.
-- (b) If not, vendor an older sibling from the package's git history (perhaps a 1.x release that targeted 2022.3).
-
-Phase 0's inventory should resolve this.
+**Note**: We require Unity 6.0+ for native targets — locked decision based on the user's confirmed Unity 6000.3.5f2 install. The upstream `flutter_embed_unity_6000_0_android` package targets Unity 6, and we vendor it as-is. Older Unity versions (2022.3 LTS) keep working for WebGL but native targets require the upgrade.
 
 ### Task 13: `pubspec.yaml` plugin declaration
 
@@ -855,10 +852,18 @@ gh pr create --base main --head feat/plan-f-native-via-embed \
 
 ---
 
-## What to call out for the user up-front
+## Resolved decisions (locked before execution)
+
+- **Unity version**: 6.0 / 6000.x. User is on 6000.3.5f2. WebGL still builds on older Unity, but native targets require Unity 6.
+- **Flutter / Dart**: Flutter 3.38+, Dart 3.10+. Bumped from Plan A baselines.
+- **iOS deployment target**: 14.0.
+- **Android NDK**: 27+.
+- **Targets named**: `webgl`, `ios`, `android` (no `native_` prefix).
+- **Vendoring**: Yes — MIT, attribution in `THIRDPARTY.md`. Zero external embed-unity dep.
+
+## Notes for the implementer
 
 1. **Vendoring is real work.** Phase 0 inventory + Phases 11-12 copy + rename. Estimate: 2-3 days of focused work, a chunk of which is iterating on Swift/Kotlin compilation.
-2. **Unity 2022.3 vs Unity 6.** The upstream Android package targets Unity 6. We need to verify it works for 2022.3 LTS or vendor an older 2022.3-targeted sibling.
-3. **iOS XCFramework packaging.** Unity's iOS export produces an Xcode project, not directly an XCFramework. The post-build step (`xcodebuild -create-xcframework`) is essential for clean Flutter integration.
-4. **Bridge contract preserved.** Same `FlunityMessage` types. Same `[FlunityBridge]` GameObject. Same `ReceiveFromFlutter` method. Only the transport changes per target. This is the v1 win we don't compromise.
-5. **License.** MIT vendored code, attribution in `THIRDPARTY.md`. Compliant with both MIT and our own MIT.
+2. **iOS XCFramework packaging.** Unity's iOS export produces an Xcode project, not directly an XCFramework. The post-build step (`xcodebuild -create-xcframework`) is essential for clean Flutter integration.
+3. **Bridge contract preserved.** Same `FlunityMessage` types. Same `[FlunityBridge]` GameObject. Same `ReceiveFromFlutter` method. Only the transport changes per target. This is the v1 win we don't compromise.
+4. **License.** MIT vendored code, attribution in `THIRDPARTY.md`. Compliant with both MIT and our own MIT.

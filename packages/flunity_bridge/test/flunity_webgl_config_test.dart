@@ -23,32 +23,38 @@ void main() {
     });
 
     test(
-        'resolveBaseUrl(): substitutes androidEmulatorHost when host is loopback on Android',
-        () {
-      const c = FlunityWebGLConfig.dev();
-      expect(
-        c.resolveBaseUrl(platform: TargetPlatform.android),
-        'http://10.0.2.2:8080/',
-      );
-    });
+      'resolveBaseUrl(): substitutes androidEmulatorHost when host is loopback on Android',
+      () {
+        const c = FlunityWebGLConfig.dev();
+        expect(
+          c.resolveBaseUrl(platform: TargetPlatform.android),
+          'http://10.0.2.2:8080/',
+        );
+      },
+    );
 
     test('resolveBaseUrl(): keeps 127.0.0.1 on iOS / desktop', () {
       const c = FlunityWebGLConfig.dev();
-      expect(c.resolveBaseUrl(platform: TargetPlatform.iOS),
-          'http://127.0.0.1:8080/');
-      expect(c.resolveBaseUrl(platform: TargetPlatform.macOS),
-          'http://127.0.0.1:8080/');
+      expect(
+        c.resolveBaseUrl(platform: TargetPlatform.iOS),
+        'http://127.0.0.1:8080/',
+      );
+      expect(
+        c.resolveBaseUrl(platform: TargetPlatform.macOS),
+        'http://127.0.0.1:8080/',
+      );
     });
 
     test(
-        'resolveBaseUrl(): does NOT substitute when host is non-loopback (LAN)',
-        () {
-      const c = FlunityWebGLConfig.dev(host: '192.168.1.10');
-      expect(
-        c.resolveBaseUrl(platform: TargetPlatform.android),
-        'http://192.168.1.10:8080/',
-      );
-    });
+      'resolveBaseUrl(): does NOT substitute when host is non-loopback (LAN)',
+      () {
+        const c = FlunityWebGLConfig.dev(host: '192.168.1.10');
+        expect(
+          c.resolveBaseUrl(platform: TargetPlatform.android),
+          'http://192.168.1.10:8080/',
+        );
+      },
+    );
   });
 
   group('FlunityWebGLConfig.bundled', () {

@@ -8,7 +8,7 @@ import 'package:flunity_bridge/src/transport/message_transport.dart';
 /// exposes typed [FlunityMessage] streams + send.
 class FlunityWebGLController {
   FlunityWebGLController({required MessageTransport transport})
-      : _transport = transport {
+    : _transport = transport {
     _transport.ready.then((_) {
       _isReady = true;
     });
@@ -54,7 +54,8 @@ class FlunityWebGLController {
       if (decoded is! Map<String, Object?>) {
         _messages.addError(
           FormatException(
-              'Expected JSON object from Unity, got ${decoded.runtimeType}'),
+            'Expected JSON object from Unity, got ${decoded.runtimeType}',
+          ),
         );
         return;
       }

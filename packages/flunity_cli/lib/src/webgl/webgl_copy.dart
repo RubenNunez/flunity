@@ -68,8 +68,9 @@ Future<WebGLCopySummary> copyWebGLBuild({
     'total_bytes': totalBytes,
     'generated_at': DateTime.now().toUtc().toIso8601String(),
   };
-  File(p.join(dst.path, 'flunity_webgl_manifest.json'))
-      .writeAsStringSync(const JsonEncoder.withIndent('  ').convert(manifest));
+  File(
+    p.join(dst.path, 'flunity_webgl_manifest.json'),
+  ).writeAsStringSync(const JsonEncoder.withIndent('  ').convert(manifest));
 
   return WebGLCopySummary(
     destination: dst.path,

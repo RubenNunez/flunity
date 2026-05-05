@@ -12,7 +12,8 @@ final class LoadScene extends FlunityMessage {
       final dynamic s = payload['scene'];
       if (s is! String) {
         throw const FormatException(
-            'LoadScene payload requires string "scene"');
+          'LoadScene payload requires string "scene"',
+        );
       }
       return LoadScene(scene: s);
     });

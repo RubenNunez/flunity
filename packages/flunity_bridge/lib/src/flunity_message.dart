@@ -9,9 +9,9 @@ abstract class FlunityMessage {
   Map<String, Object?> get payload;
 
   Map<String, Object?> toJson() => <String, Object?>{
-        'type': type,
-        'payload': payload,
-      };
+    'type': type,
+    'payload': payload,
+  };
 
   /// Parses a JSON map into a typed [FlunityMessage]. Unknown `type`s fall back
   /// to [RawMessage] so future Unity-side message types don't break consumers.
@@ -19,14 +19,16 @@ abstract class FlunityMessage {
     final dynamic rawType = json['type'];
     if (rawType is! String) {
       throw const FormatException(
-          'FlunityMessage requires a string "type" field');
+        'FlunityMessage requires a string "type" field',
+      );
     }
     final Map<String, Object?> payload = switch (json['payload']) {
       final Map<String, Object?> map => map,
       final Map<dynamic, dynamic> map => map.cast<String, Object?>(),
       null => const <String, Object?>{},
       _ => throw const FormatException(
-          'FlunityMessage "payload" must be a JSON object'),
+        'FlunityMessage "payload" must be a JSON object',
+      ),
     };
     final factory = _registry[rawType];
     if (factory != null) {
@@ -36,7 +38,7 @@ abstract class FlunityMessage {
   }
 
   static final Map<String, FlunityMessage Function(Map<String, Object?>)>
-      _registry = <String, FlunityMessage Function(Map<String, Object?>)>{};
+  _registry = <String, FlunityMessage Function(Map<String, Object?>)>{};
 
   /// Registers a factory for a typed message subclass. Used by built-in message
   /// classes; callers can register their own types too (overrides allowed).
@@ -78,4 +80,5 @@ bool _mapEquals(Map<String, Object?> a, Map<String, Object?> b) {
 }
 
 int _mapHash(Map<String, Object?> map) => Object.hashAllUnordered(
-    map.entries.map((e) => Object.hash(e.key, e.value)));
+  map.entries.map((e) => Object.hash(e.key, e.value)),
+);

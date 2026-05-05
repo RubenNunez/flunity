@@ -29,19 +29,31 @@ FlunityProject parseManifest(String manifestPath) {
   final target = switch (targetStr) {
     'webgl' => FlunityTarget.webgl,
     _ => throw ManifestException(
-        'Unknown target "$targetStr" — only "webgl" is supported in v1.',
-      ),
+      'Unknown target "$targetStr" — only "webgl" is supported in v1.',
+    ),
   };
 
   final pathsMap = doc['paths'] as YamlMap?;
   final paths = FlunityPaths(
     flutterApp: _resolvePath(rootDir, pathsMap, 'flutter_app', 'flutter_app'),
-    unityProject:
-        _resolvePath(rootDir, pathsMap, 'unity_project', 'unity_project'),
+    unityProject: _resolvePath(
+      rootDir,
+      pathsMap,
+      'unity_project',
+      'unity_project',
+    ),
     unityBuild: _resolvePath(
-        rootDir, pathsMap, 'unity_build', 'unity_project/Builds/WebGL'),
+      rootDir,
+      pathsMap,
+      'unity_build',
+      'unity_project/Builds/WebGL',
+    ),
     flutterAssets: _resolvePath(
-        rootDir, pathsMap, 'flutter_assets', 'flutter_app/assets/unity_webgl'),
+      rootDir,
+      pathsMap,
+      'flutter_assets',
+      'flutter_app/assets/unity_webgl',
+    ),
   );
 
   final webglMap = doc['webgl'] as YamlMap?;
@@ -59,7 +71,8 @@ FlunityProject parseManifest(String manifestPath) {
   );
 
   final bridgeMap = doc['bridge'] as YamlMap?;
-  final messages = (bridgeMap?['messages'] as YamlList?)
+  final messages =
+      (bridgeMap?['messages'] as YamlList?)
           ?.map((e) => e.toString())
           .toList() ??
       const <String>[];
@@ -93,7 +106,11 @@ String? _optionalString(YamlMap doc, String key) {
 }
 
 String _resolvePath(
-    String rootDir, YamlMap? pathsMap, String key, String fallback) {
+  String rootDir,
+  YamlMap? pathsMap,
+  String key,
+  String fallback,
+) {
   final raw = (pathsMap?[key] as String?) ?? fallback;
   return p.normalize(p.join(rootDir, raw));
 }

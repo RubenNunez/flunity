@@ -6,8 +6,8 @@ repository: https://github.com/RubenNunez/flunity
 issue_tracker: https://github.com/RubenNunez/flunity/issues
 
 environment:
-  flutter: ^3.24.0
-  sdk: ^3.5.0
+  flutter: ^3.38.0
+  sdk: ^3.10.0
 
 dependencies:
   flutter:

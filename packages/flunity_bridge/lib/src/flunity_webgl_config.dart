@@ -9,17 +9,18 @@ final class FlunityWebGLConfig {
     this.host = '127.0.0.1',
     this.port = 8080,
     this.androidEmulatorHost = '10.0.2.2',
-  })  : mode = FlunityWebGLMode.dev,
-        assetPath = '';
+  }) : mode = FlunityWebGLMode.dev,
+       assetPath = '';
 
   const FlunityWebGLConfig._bundled(this.assetPath)
-      : mode = FlunityWebGLMode.bundled,
-        host = '',
-        port = 0,
-        androidEmulatorHost = '';
+    : mode = FlunityWebGLMode.bundled,
+      host = '',
+      port = 0,
+      androidEmulatorHost = '';
 
-  factory FlunityWebGLConfig.bundled(
-      {String assetPath = 'assets/unity_webgl/'}) {
+  factory FlunityWebGLConfig.bundled({
+    String assetPath = 'assets/unity_webgl/',
+  }) {
     if (!assetPath.startsWith('assets/')) {
       throw ArgumentError.value(
         assetPath,

@@ -48,7 +48,8 @@ class _ServeSubcommand extends Command<int> {
 
     final host =
         (argResults!['host'] as String?) ?? project.webgl.devServer.host;
-    final port = int.tryParse((argResults!['port'] as String?) ?? '') ??
+    final port =
+        int.tryParse((argResults!['port'] as String?) ?? '') ??
         project.webgl.devServer.port;
     final indexHtml = File('${project.paths.unityBuild}/index.html');
     if (!indexHtml.existsSync()) {
@@ -95,8 +96,8 @@ class _ServeSubcommand extends Command<int> {
     final cmd = Platform.isMacOS
         ? ['open', url]
         : Platform.isWindows
-            ? ['cmd', '/c', 'start', '', url]
-            : ['xdg-open', url];
+        ? ['cmd', '/c', 'start', '', url]
+        : ['xdg-open', url];
     try {
       await Process.start(cmd.first, cmd.skip(1).toList(), runInShell: true);
     } catch (_) {
@@ -107,8 +108,11 @@ class _ServeSubcommand extends Command<int> {
 
 class _CopySubcommand extends Command<int> {
   _CopySubcommand({required Logger logger}) : _logger = logger {
-    argParser.addFlag('clean',
-        defaultsTo: false, help: 'Remove destination first.');
+    argParser.addFlag(
+      'clean',
+      defaultsTo: false,
+      help: 'Remove destination first.',
+    );
   }
 
   final Logger _logger;

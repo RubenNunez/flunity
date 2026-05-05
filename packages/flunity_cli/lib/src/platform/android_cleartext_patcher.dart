@@ -21,8 +21,12 @@ class AndroidCleartextPatcher {
   static bool patch({
     required String androidAppDir, // e.g. flutter_app/android/app
   }) {
-    final manifestPath =
-        p.join(androidAppDir, 'src', 'main', 'AndroidManifest.xml');
+    final manifestPath = p.join(
+      androidAppDir,
+      'src',
+      'main',
+      'AndroidManifest.xml',
+    );
     final manifest = File(manifestPath);
     if (!manifest.existsSync()) return false;
 
@@ -52,7 +56,8 @@ class AndroidCleartextPatcher {
       );
     }
     final injectionPoint = match.end;
-    final patched = '${manifestContent.substring(0, injectionPoint)}'
+    final patched =
+        '${manifestContent.substring(0, injectionPoint)}'
         'android:networkSecurityConfig="@xml/network_security_config"\n        '
         '${manifestContent.substring(injectionPoint)}';
     manifest.writeAsStringSync(patched);
