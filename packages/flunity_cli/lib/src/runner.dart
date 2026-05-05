@@ -1,5 +1,7 @@
 import 'package:args/command_runner.dart';
 import 'package:flunity_cli/src/commands/bridge_command.dart';
+import 'package:flunity_cli/src/commands/build_command.dart';
+import 'package:flunity_cli/src/commands/bundle_command.dart';
 import 'package:flunity_cli/src/commands/create_command.dart';
 import 'package:flunity_cli/src/commands/doctor_command.dart';
 import 'package:flunity_cli/src/commands/webgl_command.dart';
@@ -21,6 +23,8 @@ Future<int> runFlunityCli(List<String> args, {Logger? logger}) async {
           help: 'Print the flunity version.',
         )
         ..addCommand(BridgeCommand(logger: log))
+        ..addCommand(BuildCommand(logger: log))
+        ..addCommand(BundleCommand(logger: log))
         ..addCommand(CreateCommand(logger: log))
         ..addCommand(DoctorCommand(logger: log))
         ..addCommand(WebGLCommand(logger: log));
