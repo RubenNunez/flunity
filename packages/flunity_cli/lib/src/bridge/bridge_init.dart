@@ -49,9 +49,9 @@ Future<BridgeInitSummary> initBridge({
     'unity',
   );
   if (Directory(libUnityDart).existsSync()) {
-    final destLibUnity =
-        Directory(p.join(project.paths.flutterApp, 'lib', 'unity'))
-          ..createSync(recursive: true);
+    final destLibUnity = Directory(
+      p.join(project.paths.flutterApp, 'lib', 'unity'),
+    )..createSync(recursive: true);
     for (final entity in Directory(libUnityDart).listSync()) {
       if (entity is! File) continue;
       final destFile = File(p.join(destLibUnity.path, p.basename(entity.path)));
@@ -62,12 +62,9 @@ Future<BridgeInitSummary> initBridge({
   }
 
   // Copy Unity Assets/ from unity_bridge_basic.
-  final unityAssetsSrc = Directory(p.join(
-    templateRoot,
-    'unity_bridge_basic',
-    'unity_project',
-    'Assets',
-  ));
+  final unityAssetsSrc = Directory(
+    p.join(templateRoot, 'unity_bridge_basic', 'unity_project', 'Assets'),
+  );
   if (unityAssetsSrc.existsSync()) {
     final destAssets = Directory(p.join(project.paths.unityProject, 'Assets'))
       ..createSync(recursive: true);
@@ -76,7 +73,7 @@ Future<BridgeInitSummary> initBridge({
 
   // Patch Unity index.html if it exists.
   var patched = false;
-  final indexHtml = File(p.join(project.paths.unityBuild, 'index.html'));
+  final indexHtml = File(p.join(project.buildDir, 'index.html'));
   if (indexHtml.existsSync()) {
     final original = indexHtml.readAsStringSync();
     final updated = patchUnityIndexHtml(original);

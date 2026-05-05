@@ -5,7 +5,7 @@ target: webgl
 paths:
   flutter_app: flutter_app
   unity_project: unity_project
-  unity_build: unity_project/Builds/WebGL
+  unity_builds: unity_project/Builds
   flutter_assets: flutter_app/assets/unity_webgl
 
 webgl:

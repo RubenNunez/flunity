@@ -29,7 +29,7 @@ Future<WebGLCopySummary> copyWebGLBuild({
   required FlunityProject project,
   bool clean = false,
 }) async {
-  final src = Directory(project.paths.unityBuild);
+  final src = Directory(project.buildDir);
   if (!src.existsSync() || !File(p.join(src.path, 'index.html')).existsSync()) {
     throw WebGLCopyException(
       'No Unity WebGL build at ${src.path}/index.html — build first.',
@@ -68,8 +68,9 @@ Future<WebGLCopySummary> copyWebGLBuild({
     'total_bytes': totalBytes,
     'generated_at': DateTime.now().toUtc().toIso8601String(),
   };
-  File(p.join(dst.path, 'flunity_webgl_manifest.json'))
-      .writeAsStringSync(const JsonEncoder.withIndent('  ').convert(manifest));
+  File(
+    p.join(dst.path, 'flunity_webgl_manifest.json'),
+  ).writeAsStringSync(const JsonEncoder.withIndent('  ').convert(manifest));
 
   return WebGLCopySummary(
     destination: dst.path,

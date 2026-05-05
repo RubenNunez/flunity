@@ -28,20 +28,42 @@ FlunityProject parseManifest(String manifestPath) {
   final targetStr = _requireString(doc, 'target');
   final target = switch (targetStr) {
     'webgl' => FlunityTarget.webgl,
+    'ios' => FlunityTarget.ios,
+    'android' => FlunityTarget.android,
     _ => throw ManifestException(
-        'Unknown target "$targetStr" — only "webgl" is supported in v1.',
-      ),
+      'Unknown target "$targetStr" — valid values: webgl, ios, android.',
+    ),
   };
 
   final pathsMap = doc['paths'] as YamlMap?;
+  // Legacy override: pre–Plan F manifests used `unity_build:` (singular).
+  // If present, we treat it as the full per-target build dir for the active
+  // target. New manifests use `unity_builds:` (plural) — the parent dir.
+  final hasLegacyUnityBuild =
+      pathsMap != null && pathsMap['unity_build'] is String;
   final paths = FlunityPaths(
     flutterApp: _resolvePath(rootDir, pathsMap, 'flutter_app', 'flutter_app'),
-    unityProject:
-        _resolvePath(rootDir, pathsMap, 'unity_project', 'unity_project'),
-    unityBuild: _resolvePath(
-        rootDir, pathsMap, 'unity_build', 'unity_project/Builds/WebGL'),
+    unityProject: _resolvePath(
+      rootDir,
+      pathsMap,
+      'unity_project',
+      'unity_project',
+    ),
+    unityBuilds: _resolvePath(
+      rootDir,
+      pathsMap,
+      'unity_builds',
+      'unity_project/Builds',
+    ),
     flutterAssets: _resolvePath(
-        rootDir, pathsMap, 'flutter_assets', 'flutter_app/assets/unity_webgl'),
+      rootDir,
+      pathsMap,
+      'flutter_assets',
+      'flutter_app/assets/unity_webgl',
+    ),
+    unityBuildOverride: hasLegacyUnityBuild
+        ? _resolvePath(rootDir, pathsMap, 'unity_build', '')
+        : null,
   );
 
   final webglMap = doc['webgl'] as YamlMap?;
@@ -59,7 +81,8 @@ FlunityProject parseManifest(String manifestPath) {
   );
 
   final bridgeMap = doc['bridge'] as YamlMap?;
-  final messages = (bridgeMap?['messages'] as YamlList?)
+  final messages =
+      (bridgeMap?['messages'] as YamlList?)
           ?.map((e) => e.toString())
           .toList() ??
       const <String>[];
@@ -93,7 +116,11 @@ String? _optionalString(YamlMap doc, String key) {
 }
 
 String _resolvePath(
-    String rootDir, YamlMap? pathsMap, String key, String fallback) {
+  String rootDir,
+  YamlMap? pathsMap,
+  String key,
+  String fallback,
+) {
   final raw = (pathsMap?[key] as String?) ?? fallback;
   return p.normalize(p.join(rootDir, raw));
 }

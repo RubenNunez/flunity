@@ -23,8 +23,17 @@ scripts:
     description: Run tests in every package
     run: 'melos exec --dir-exists=test -- "if grep -q ''sdk: flutter'' pubspec.yaml; then flutter test; else dart test; fi"'
   format:
-    description: Format every Dart file
-    run: melos exec -- "dart format ."
+    description: Format Dart files under lib/, test/, bin/ (skips templates/).
+    # Loop over the canonical source dirs in each package, only invoking
+    # dart format on those that actually exist. Avoids running dart format
+    # against templates/ — see format-check for why.
+    run: |
+      melos exec -- 'for d in lib test bin; do if [ -d "$d" ]; then dart format "$d"; fi; done'
   format-check:
-    description: Check formatting (CI)
-    run: melos exec -- "dart format --output=none --set-exit-if-changed ."
+    description: Check formatting under lib/, test/, bin/ (CI).
+    # Scope to lib/, test/, bin/ — skips templates/, which contains
+    # scaffolded Flutter code with __placeholder__ tokens. Formatter
+    # output across patch SDKs is occasionally unstable on those, and
+    # they're regenerated on `flunity create` anyway.
+    run: |
+      melos exec -- 'for d in lib test bin; do if [ -d "$d" ]; then dart format --output=none --set-exit-if-changed "$d" || exit 1; fi; done'

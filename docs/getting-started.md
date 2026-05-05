@@ -4,9 +4,10 @@ Welcome to Flunity. This guide takes you from zero to a Flutter app rendering a 
 
 ## Prerequisites
 
-- **Flutter** 3.24 or newer (`flutter --version`).
-- **Dart** 3.5 or newer (ships with Flutter).
-- **Unity** 2022.3 LTS or newer with the **WebGL Build Support** module installed.
+- **Flutter** 3.38 or newer (`flutter --version`).
+- **Dart** 3.10 or newer (ships with Flutter).
+- **Unity** 6.0 (6000.x) or newer with the **WebGL Build Support** module installed. Native iOS / Android targets require Unity 6 specifically (the `flutter_embed_unity_6000_*` packages we vendor).
+- **Xcode** 26+ for iOS native targets; **Android Studio** with NDK 27+ for Android native targets.
 - A working Flutter target (Android emulator, iOS simulator, macOS, Windows, or Linux desktop).
 
 ## 1. Install the CLI

@@ -15,31 +15,36 @@ void main() {
   test('renders the bridge template into <name>/ by default', () async {
     final fakeTemplateRoot = Directory(p.join(tmp.path, 'templates'))
       ..createSync();
-    final fakeBasic =
-        Directory(p.join(fakeTemplateRoot.path, 'flutter_webgl_basic'))
-          ..createSync();
-    File(p.join(fakeBasic.path, 'flunity.yaml'))
-        .writeAsStringSync('# basic\nname: __app_name__\ntarget: webgl\n');
-    final fakeBridge =
-        Directory(p.join(fakeTemplateRoot.path, 'flutter_webgl_bridge'))
-          ..createSync();
-    File(p.join(fakeBridge.path, 'flunity.yaml'))
-        .writeAsStringSync('# bridge\nname: __app_name__\ntarget: webgl\n');
+    final fakeBasic = Directory(
+      p.join(fakeTemplateRoot.path, 'flutter_webgl_basic'),
+    )..createSync();
+    File(
+      p.join(fakeBasic.path, 'flunity.yaml'),
+    ).writeAsStringSync('# basic\nname: __app_name__\ntarget: webgl\n');
+    final fakeBridge = Directory(
+      p.join(fakeTemplateRoot.path, 'flutter_webgl_bridge'),
+    )..createSync();
+    File(
+      p.join(fakeBridge.path, 'flunity.yaml'),
+    ).writeAsStringSync('# bridge\nname: __app_name__\ntarget: webgl\n');
 
     final runner = CommandRunner<int>('flunity', 'test')
-      ..addCommand(CreateCommand(
-        logger: Logger(level: Level.error),
-        templateRootOverride: fakeTemplateRoot.path,
-        skipFlutterCreate: true,
-      ));
+      ..addCommand(
+        CreateCommand(
+          logger: Logger(level: Level.error),
+          templateRootOverride: fakeTemplateRoot.path,
+          skipFlutterCreate: true,
+        ),
+      );
 
     final originalCwd = Directory.current;
     Directory.current = tmp;
     try {
       final code = await runner.run(['create', 'my_app']);
       expect(code, 0);
-      final manifest =
-          File(p.join(tmp.path, 'my_app', 'flunity.yaml')).readAsStringSync();
+      final manifest = File(
+        p.join(tmp.path, 'my_app', 'flunity.yaml'),
+      ).readAsStringSync();
       expect(manifest, contains('# bridge'));
     } finally {
       Directory.current = originalCwd;
@@ -49,28 +54,33 @@ void main() {
   test('--no-bridge picks the basic template', () async {
     final fakeTemplateRoot = Directory(p.join(tmp.path, 'templates'))
       ..createSync();
-    final fakeBasic =
-        Directory(p.join(fakeTemplateRoot.path, 'flutter_webgl_basic'))
-          ..createSync();
-    File(p.join(fakeBasic.path, 'flunity.yaml'))
-        .writeAsStringSync('# basic\nname: __app_name__\ntarget: webgl\n');
-    Directory(p.join(fakeTemplateRoot.path, 'flutter_webgl_bridge'))
-        .createSync();
+    final fakeBasic = Directory(
+      p.join(fakeTemplateRoot.path, 'flutter_webgl_basic'),
+    )..createSync();
+    File(
+      p.join(fakeBasic.path, 'flunity.yaml'),
+    ).writeAsStringSync('# basic\nname: __app_name__\ntarget: webgl\n');
+    Directory(
+      p.join(fakeTemplateRoot.path, 'flutter_webgl_bridge'),
+    ).createSync();
 
     final runner = CommandRunner<int>('flunity', 'test')
-      ..addCommand(CreateCommand(
-        logger: Logger(level: Level.error),
-        templateRootOverride: fakeTemplateRoot.path,
-        skipFlutterCreate: true,
-      ));
+      ..addCommand(
+        CreateCommand(
+          logger: Logger(level: Level.error),
+          templateRootOverride: fakeTemplateRoot.path,
+          skipFlutterCreate: true,
+        ),
+      );
 
     final originalCwd = Directory.current;
     Directory.current = tmp;
     try {
       final code = await runner.run(['create', '--no-bridge', 'my_app']);
       expect(code, 0);
-      final manifest =
-          File(p.join(tmp.path, 'my_app', 'flunity.yaml')).readAsStringSync();
+      final manifest = File(
+        p.join(tmp.path, 'my_app', 'flunity.yaml'),
+      ).readAsStringSync();
       expect(manifest, contains('# basic'));
     } finally {
       Directory.current = originalCwd;
@@ -80,18 +90,22 @@ void main() {
   test('rejects an existing directory', () async {
     final fakeTemplateRoot = Directory(p.join(tmp.path, 'templates'))
       ..createSync();
-    Directory(p.join(fakeTemplateRoot.path, 'flutter_webgl_basic'))
-        .createSync();
-    Directory(p.join(fakeTemplateRoot.path, 'flutter_webgl_bridge'))
-        .createSync();
+    Directory(
+      p.join(fakeTemplateRoot.path, 'flutter_webgl_basic'),
+    ).createSync();
+    Directory(
+      p.join(fakeTemplateRoot.path, 'flutter_webgl_bridge'),
+    ).createSync();
     Directory(p.join(tmp.path, 'taken')).createSync();
 
     final runner = CommandRunner<int>('flunity', 'test')
-      ..addCommand(CreateCommand(
-        logger: Logger(level: Level.quiet),
-        templateRootOverride: fakeTemplateRoot.path,
-        skipFlutterCreate: true,
-      ));
+      ..addCommand(
+        CreateCommand(
+          logger: Logger(level: Level.quiet),
+          templateRootOverride: fakeTemplateRoot.path,
+          skipFlutterCreate: true,
+        ),
+      );
 
     final originalCwd = Directory.current;
     Directory.current = tmp;
@@ -105,32 +119,45 @@ void main() {
   test('rejects unsupported target', () async {
     final fakeTemplateRoot = Directory(p.join(tmp.path, 'templates'))
       ..createSync();
-    Directory(p.join(fakeTemplateRoot.path, 'flutter_webgl_basic'))
-        .createSync();
-    Directory(p.join(fakeTemplateRoot.path, 'flutter_webgl_bridge'))
-        .createSync();
+    Directory(
+      p.join(fakeTemplateRoot.path, 'flutter_webgl_basic'),
+    ).createSync();
+    Directory(
+      p.join(fakeTemplateRoot.path, 'flutter_webgl_bridge'),
+    ).createSync();
     final runner = CommandRunner<int>('flunity', 'test')
-      ..addCommand(CreateCommand(
-        logger: Logger(level: Level.quiet),
-        templateRootOverride: fakeTemplateRoot.path,
-        skipFlutterCreate: true,
-      ));
-    expect(await runner.run(['create', '--target', 'native_android', 'x']), 64);
+      ..addCommand(
+        CreateCommand(
+          logger: Logger(level: Level.quiet),
+          templateRootOverride: fakeTemplateRoot.path,
+          skipFlutterCreate: true,
+        ),
+      );
+    // `args` validates --allowed values before the command sees them,
+    // throwing a UsageException. We expect the exception, not exit code 64.
+    expect(
+      () => runner.run(['create', '--target', 'desktop', 'x']),
+      throwsA(isA<UsageException>()),
+    );
   });
 
   test('rejects invalid app name', () async {
     final fakeTemplateRoot = Directory(p.join(tmp.path, 'templates'))
       ..createSync();
-    Directory(p.join(fakeTemplateRoot.path, 'flutter_webgl_basic'))
-        .createSync();
-    Directory(p.join(fakeTemplateRoot.path, 'flutter_webgl_bridge'))
-        .createSync();
+    Directory(
+      p.join(fakeTemplateRoot.path, 'flutter_webgl_basic'),
+    ).createSync();
+    Directory(
+      p.join(fakeTemplateRoot.path, 'flutter_webgl_bridge'),
+    ).createSync();
     final runner = CommandRunner<int>('flunity', 'test')
-      ..addCommand(CreateCommand(
-        logger: Logger(level: Level.quiet),
-        templateRootOverride: fakeTemplateRoot.path,
-        skipFlutterCreate: true,
-      ));
+      ..addCommand(
+        CreateCommand(
+          logger: Logger(level: Level.quiet),
+          templateRootOverride: fakeTemplateRoot.path,
+          skipFlutterCreate: true,
+        ),
+      );
     expect(await runner.run(['create', 'My-App']), 64);
   });
 }

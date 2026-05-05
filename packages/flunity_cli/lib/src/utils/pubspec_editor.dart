@@ -22,7 +22,8 @@ bool ensurePubspecDependency({
   final depsIdx = lines.indexWhere((l) => l.trim() == 'dependencies:');
   if (depsIdx < 0) {
     throw StateError(
-        'Could not locate `dependencies:` section in $pubspecPath');
+      'Could not locate `dependencies:` section in $pubspecPath',
+    );
   }
   // Insert immediately after `dependencies:` line.
   lines.insert(depsIdx + 1, '  $name: $constraint');

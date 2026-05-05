@@ -18,8 +18,9 @@ void main() {
   tearDown(() => tmp.deleteSync(recursive: true));
 
   test('substitutes __var__ in file contents', () async {
-    File(p.join(templateDir.path, 'README.md'))
-        .writeAsStringSync('Project: __app_name__');
+    File(
+      p.join(templateDir.path, 'README.md'),
+    ).writeAsStringSync('Project: __app_name__');
 
     await renderTemplate(
       from: templateDir.path,
@@ -36,8 +37,9 @@ void main() {
   test('substitutes __var__ in file and directory names', () async {
     final nested = Directory(p.join(templateDir.path, '__app_name__'))
       ..createSync();
-    File(p.join(nested.path, '__app_name___main.dart'))
-        .writeAsStringSync('// __app_name__');
+    File(
+      p.join(nested.path, '__app_name___main.dart'),
+    ).writeAsStringSync('// __app_name__');
 
     await renderTemplate(
       from: templateDir.path,
@@ -46,8 +48,9 @@ void main() {
     );
 
     expect(
-      File(p.join(outputDir.path, 'my_app', 'my_app_main.dart'))
-          .readAsStringSync(),
+      File(
+        p.join(outputDir.path, 'my_app', 'my_app_main.dart'),
+      ).readAsStringSync(),
       '// my_app',
     );
   });
@@ -60,7 +63,9 @@ void main() {
       variables: {'app_name': 'x'},
     );
     expect(
-        File(p.join(outputDir.path, 'static.txt')).readAsStringSync(), 'hello');
+      File(p.join(outputDir.path, 'static.txt')).readAsStringSync(),
+      'hello',
+    );
   });
 
   test('throws when required variable is missing', () async {
@@ -75,27 +80,31 @@ void main() {
     );
   });
 
-  test('refuses to overwrite an existing destination unless force=true',
-      () async {
-    File(p.join(outputDir.path, 'existing.txt')).writeAsStringSync('keep me');
-    File(p.join(templateDir.path, 'existing.txt')).writeAsStringSync('NEW');
+  test(
+    'refuses to overwrite an existing destination unless force=true',
+    () async {
+      File(p.join(outputDir.path, 'existing.txt')).writeAsStringSync('keep me');
+      File(p.join(templateDir.path, 'existing.txt')).writeAsStringSync('NEW');
 
-    expect(
-      () => renderTemplate(
+      expect(
+        () => renderTemplate(
+          from: templateDir.path,
+          to: outputDir.path,
+          variables: const {},
+        ),
+        throwsA(isA<TemplateException>()),
+      );
+
+      await renderTemplate(
         from: templateDir.path,
         to: outputDir.path,
         variables: const {},
-      ),
-      throwsA(isA<TemplateException>()),
-    );
-
-    await renderTemplate(
-      from: templateDir.path,
-      to: outputDir.path,
-      variables: const {},
-      force: true,
-    );
-    expect(
-        File(p.join(outputDir.path, 'existing.txt')).readAsStringSync(), 'NEW');
-  });
+        force: true,
+      );
+      expect(
+        File(p.join(outputDir.path, 'existing.txt')).readAsStringSync(),
+        'NEW',
+      );
+    },
+  );
 }

@@ -28,9 +28,12 @@ void main() {
     expect(result.shimCopied, isTrue);
     expect(result.indexHtmlPatched, isTrue);
     expect(
-        File(p.join(buildDir.path, 'flunity_bridge.js')).existsSync(), isTrue);
-    final patched =
-        File(p.join(buildDir.path, 'index.html')).readAsStringSync();
+      File(p.join(buildDir.path, 'flunity_bridge.js')).existsSync(),
+      isTrue,
+    );
+    final patched = File(
+      p.join(buildDir.path, 'index.html'),
+    ).readAsStringSync();
     expect(patched, contains('flunity:patch v1'));
     expect(patched, contains('flunity_bridge.js'));
     expect(patched, contains('window.flunity.ready(unityInstance)'));
@@ -48,7 +51,9 @@ void main() {
 
     await prepareWebGLBuild(buildDir: buildDir.path, shimSourcePath: shim.path);
     final r2 = await prepareWebGLBuild(
-        buildDir: buildDir.path, shimSourcePath: shim.path);
+      buildDir: buildDir.path,
+      shimSourcePath: shim.path,
+    );
     expect(r2.shimCopied, isFalse);
     expect(r2.indexHtmlPatched, isFalse);
   });

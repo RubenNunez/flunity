@@ -80,7 +80,9 @@ class _Precompressed {
 }
 
 Future<_Precompressed?> _resolvePrecompressed(
-    String filePath, String acceptEncoding) async {
+  String filePath,
+  String acceptEncoding,
+) async {
   if (acceptEncoding.contains('br')) {
     final candidate = File('$filePath.br');
     if (candidate.existsSync()) return _Precompressed(candidate, 'br');
@@ -95,9 +97,11 @@ Future<_Precompressed?> _resolvePrecompressed(
 shelf.Handler _unityHeadersMiddleware(shelf.Handler inner) {
   return (shelf.Request request) async {
     final response = await inner(request);
-    return response.change(headers: <String, String>{
-      'Cross-Origin-Opener-Policy': 'same-origin',
-      'Cross-Origin-Embedder-Policy': 'require-corp',
-    });
+    return response.change(
+      headers: <String, String>{
+        'Cross-Origin-Opener-Policy': 'same-origin',
+        'Cross-Origin-Embedder-Policy': 'require-corp',
+      },
+    );
   };
 }

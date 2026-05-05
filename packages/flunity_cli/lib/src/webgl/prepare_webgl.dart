@@ -4,10 +4,7 @@ import 'package:flunity_cli/src/bridge/index_html_patcher.dart';
 import 'package:path/path.dart' as p;
 
 class PrepareSummary {
-  PrepareSummary({
-    required this.shimCopied,
-    required this.indexHtmlPatched,
-  });
+  PrepareSummary({required this.shimCopied, required this.indexHtmlPatched});
   final bool shimCopied;
   final bool indexHtmlPatched;
 }

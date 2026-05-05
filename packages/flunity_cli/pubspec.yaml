@@ -6,7 +6,7 @@ repository: https://github.com/RubenNunez/flunity
 issue_tracker: https://github.com/RubenNunez/flunity/issues
 
 environment:
-  sdk: ^3.5.0
+  sdk: ^3.10.0
 
 executables:
   flunity:
