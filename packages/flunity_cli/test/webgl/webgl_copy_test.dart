@@ -14,7 +14,7 @@ void main() {
     File(
       p.join(tmp.path, 'flunity.yaml'),
     ).writeAsStringSync('name: x\ntarget: webgl');
-    final buildDir = Directory(p.join(tmp.path, 'unity_project/Builds/WebGL'))
+    final buildDir = Directory(p.join(tmp.path, 'unity_project/Builds/webgl'))
       ..createSync(recursive: true);
     File(p.join(buildDir.path, 'index.html')).writeAsStringSync('<html/>');
     File(p.join(buildDir.path, 'app.wasm')).writeAsBytesSync(<int>[1, 2, 3]);
@@ -47,7 +47,7 @@ void main() {
     File(
       p.join(tmp.path, 'flunity.yaml'),
     ).writeAsStringSync('name: x\ntarget: webgl');
-    final buildDir = Directory(p.join(tmp.path, 'unity_project/Builds/WebGL'))
+    final buildDir = Directory(p.join(tmp.path, 'unity_project/Builds/webgl'))
       ..createSync(recursive: true);
     File(p.join(buildDir.path, 'index.html')).writeAsStringSync('<html/>');
 

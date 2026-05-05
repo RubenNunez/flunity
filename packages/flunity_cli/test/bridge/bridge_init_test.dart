@@ -101,10 +101,10 @@ void main() {
 
   test('patches index.html if present', () async {
     Directory(
-      p.join(tmp.path, 'unity_project/Builds/WebGL'),
+      p.join(tmp.path, 'unity_project/Builds/webgl'),
     ).createSync(recursive: true);
     File(
-      p.join(tmp.path, 'unity_project/Builds/WebGL/index.html'),
+      p.join(tmp.path, 'unity_project/Builds/webgl/index.html'),
     ).writeAsStringSync('<html><body></body></html>');
     final project = FlunityProject.loadFromManifest(
       p.join(tmp.path, 'flunity.yaml'),
@@ -116,7 +116,7 @@ void main() {
     );
     expect(summary.indexHtmlPatched, isTrue);
     final patched = File(
-      p.join(tmp.path, 'unity_project/Builds/WebGL/index.html'),
+      p.join(tmp.path, 'unity_project/Builds/webgl/index.html'),
     ).readAsStringSync();
     expect(patched, contains('flunity:patch'));
   });

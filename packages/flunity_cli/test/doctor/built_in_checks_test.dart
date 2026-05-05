@@ -58,10 +58,10 @@ void main() {
       CheckSeverity.warn,
     );
     Directory(
-      p.join(tmp.path, 'unity_project/Builds/WebGL'),
+      p.join(tmp.path, 'unity_project/Builds/webgl'),
     ).createSync(recursive: true);
     File(
-      p.join(tmp.path, 'unity_project/Builds/WebGL/index.html'),
+      p.join(tmp.path, 'unity_project/Builds/webgl/index.html'),
     ).writeAsStringSync('<html/>');
     expect(
       (await UnityBuildCheck(project: project).run()).severity,
