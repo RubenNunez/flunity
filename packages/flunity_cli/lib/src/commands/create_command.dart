@@ -63,9 +63,9 @@ class CreateCommand extends Command<int> {
       return 64;
     }
 
-    // In Plan B both --no-bridge and default use the same flutter_webgl_basic
-    // template. Plan C swaps in flutter_webgl_bridge as the default.
-    const templateName = 'flutter_webgl_basic';
+    final templateName = (argResults!['no-bridge'] == true)
+        ? 'flutter_webgl_basic'
+        : 'flutter_webgl_bridge';
 
     final templateRoot = await _resolveTemplateRoot();
     if (templateRoot == null) {
