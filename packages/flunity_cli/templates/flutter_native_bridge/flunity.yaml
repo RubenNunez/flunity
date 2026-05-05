@@ -1,0 +1,14 @@
+name: __app_name__
+version: 0.1.0
+# Default to iOS for `flunity create --target ios|android`. The CLI
+# overrides this field to match the --target flag at scaffold time.
+target: ios
+
+paths:
+  flutter_app: flutter_app
+  unity_project: unity_project
+  unity_builds: unity_project/Builds
+
+bridge:
+  enabled: true
+  messages: []

@@ -6,11 +6,12 @@ import Foundation
 import Flutter
 
 
-// This is called by Unity script to pass messages from Unity to Flutter
-// DO NOT change @_cdecl: it is referenced in C# script
-// <unity project>/Assets/FlutterEmbed/SendToFlutter/SendToFlutter.cs
-// @_cdecl allows C# to call a top level function by the name specified
-@_cdecl("FlutterEmbedUnityIos_sendToFlutter")
+// This is called by Unity script to pass messages from Unity to Flutter.
+// DO NOT change @_cdecl: it is referenced in the Unity-side C# script that
+// the flutter_native_bridge template ships under
+// <unity project>/Assets/Plugins/iOS/FlunityBridgeNative.cs.
+// @_cdecl allows C# (via DllImport "__Internal") to call this top-level function.
+@_cdecl("FlunityBridge_sendToFlutter")
 public func sendToFlutter(_ dataAsUnsafePointer: UnsafePointer<CChar>) {
     let data = String(cString: UnsafePointer<CChar>(dataAsUnsafePointer))
     SendToFlutter.sendToFlutter(data)

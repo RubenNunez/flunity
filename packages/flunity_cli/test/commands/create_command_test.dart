@@ -133,7 +133,12 @@ void main() {
           skipFlutterCreate: true,
         ),
       );
-    expect(await runner.run(['create', '--target', 'native_android', 'x']), 64);
+    // `args` validates --allowed values before the command sees them,
+    // throwing a UsageException. We expect the exception, not exit code 64.
+    expect(
+      () => runner.run(['create', '--target', 'desktop', 'x']),
+      throwsA(isA<UsageException>()),
+    );
   });
 
   test('rejects invalid app name', () async {

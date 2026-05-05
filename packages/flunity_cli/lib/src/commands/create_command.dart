@@ -22,7 +22,8 @@ class CreateCommand extends Command<int> {
       ..addOption(
         'target',
         defaultsTo: 'webgl',
-        help: 'Target platform. v1 only supports "webgl".',
+        allowed: ['webgl', 'ios', 'android'],
+        help: 'Target platform: webgl | ios | android.',
       )
       ..addOption(
         'org',
@@ -71,16 +72,15 @@ class CreateCommand extends Command<int> {
       return 64;
     }
     final target = argResults!['target'] as String;
-    if (target != 'webgl') {
-      _logger.err(
-        'Target "$target" is not supported in v1. See docs/native-roadmap.md.',
-      );
-      return 64;
-    }
+    final noBridge = argResults!['no-bridge'] == true;
 
-    final templateName = (argResults!['no-bridge'] == true)
-        ? 'flutter_webgl_basic'
-        : 'flutter_webgl_bridge';
+    final templateName = switch ((target, noBridge)) {
+      ('webgl', true) => 'flutter_webgl_basic',
+      ('webgl', false) => 'flutter_webgl_bridge',
+      ('ios', true) || ('android', true) => 'flutter_native_basic',
+      ('ios', false) || ('android', false) => 'flutter_native_bridge',
+      _ => throw StateError('Unreachable: target=$target noBridge=$noBridge'),
+    };
 
     final templateRoot = await _resolveTemplateRoot();
     if (templateRoot == null) {
@@ -121,6 +121,8 @@ class CreateCommand extends Command<int> {
       return 70;
     }
 
+    _overwriteManifestTarget(p.join(outputPath, 'flunity.yaml'), target);
+
     if (!_skipFlutterCreate) {
       final flutterAppDir = p.join(outputPath, 'flutter_app');
 
@@ -144,8 +146,10 @@ dependency_overrides:
         );
       }
 
-      // Step 2: flutter create (generates ios/, android/, macos/, etc.).
-      // This also runs pub get internally, picking up the override above.
+      // Step 2: flutter create (generates ios/, android/, etc.). For webgl
+      // targets we include macos so the same scaffold can run on desktop;
+      // for native targets we keep it lean to ios+android only.
+      final platforms = target == 'webgl' ? 'ios,android,macos' : 'ios,android';
       _logger.info('');
       final flutterCreate = _logger.progress(
         'Generating platform projects via flutter create',
@@ -158,7 +162,7 @@ dependency_overrides:
           '--project-name',
           appName,
           '--platforms',
-          'ios,android,macos',
+          platforms,
           '.',
         ], workingDirectory: flutterAppDir);
         flutterCreate.complete('Platform projects ready');
@@ -168,11 +172,17 @@ dependency_overrides:
         return 70;
       }
 
-      // Step 3: iOS ATS + Android cleartext patchers.
-      IosAtsPatcher.patch(p.join(flutterAppDir, 'ios', 'Runner', 'Info.plist'));
-      AndroidCleartextPatcher.patch(
-        androidAppDir: p.join(flutterAppDir, 'android', 'app'),
-      );
+      // Step 3: iOS ATS + Android cleartext patchers (webgl only — native
+      // bridges don't load assets over HTTP, so cleartext exemptions aren't
+      // needed). Skipping the patchers on native keeps the manifests clean.
+      if (target == 'webgl') {
+        IosAtsPatcher.patch(
+          p.join(flutterAppDir, 'ios', 'Runner', 'Info.plist'),
+        );
+        AndroidCleartextPatcher.patch(
+          androidAppDir: p.join(flutterAppDir, 'android', 'app'),
+        );
+      }
 
       // Step 4: flutter pub get to refresh after the patchers (no-op if
       // nothing changed, but Android manifest changes can affect pub).
@@ -194,15 +204,51 @@ dependency_overrides:
       ..info('')
       ..success('Created $appName/. Next steps:')
       ..info('  1. cd $appName')
-      ..info('  2. flunity doctor                       # verify environment')
-      ..info(
-        '  3. open unity_project/ in Unity, build WebGL → unity_project/Builds/WebGL/',
-      )
-      ..info('  4. flunity webgl serve                  # start dev server')
-      ..info(
-        '  5. cd flutter_app && flutter run --dart-define=FLUNITY_MODE=dev',
-      );
+      ..info('  2. flunity doctor                       # verify environment');
+    if (target == 'webgl') {
+      _logger
+        ..info(
+          '  3. open unity_project/ in Unity, build WebGL → unity_project/Builds/webgl/',
+        )
+        ..info('  4. flunity webgl serve                  # start dev server')
+        ..info(
+          '  5. cd flutter_app && flutter run --dart-define=FLUNITY_MODE=dev',
+        );
+    } else {
+      _logger
+        ..info(
+          '  3. open unity_project/ in Unity 6 with $target Build Support installed',
+        )
+        ..info(
+          '  4. flunity build $target                # build Unity → unity_project/Builds/$target/',
+        )
+        ..info(
+          '  5. flunity bundle $target               # copy Unity output into flutter_app/$target/',
+        )
+        ..info('  6. cd flutter_app && flutter run -d $target');
+    }
     return 0;
+  }
+
+  /// Rewrites the rendered `flunity.yaml`'s `target:` field so it matches
+  /// the CLI flag. Templates ship with sensible defaults (webgl/ios), but
+  /// when the user passes `--target android` we want the manifest to record
+  /// android, not the template default.
+  static void _overwriteManifestTarget(String manifestPath, String target) {
+    final file = File(manifestPath);
+    if (!file.existsSync()) return;
+    final lines = file.readAsLinesSync();
+    final out = <String>[];
+    var replaced = false;
+    for (final line in lines) {
+      if (!replaced && RegExp(r'^target:\s*\S+').hasMatch(line)) {
+        out.add('target: $target');
+        replaced = true;
+      } else {
+        out.add(line);
+      }
+    }
+    file.writeAsStringSync('${out.join('\n')}\n');
   }
 
   /// Locates the package's `templates/` directory.
@@ -232,9 +278,14 @@ dependency_overrides:
 
     Directory? dir = Directory(p.dirname(Platform.script.toFilePath()));
     for (var i = 0; i < 8 && dir != null; i++) {
-      final candidate = p.join(dir.path, 'templates', 'flutter_webgl_basic');
-      if (Directory(candidate).existsSync()) {
-        return p.join(dir.path, 'templates');
+      // Any template directory under `templates/` confirms we've found the
+      // package root.
+      final templatesDir = p.join(dir.path, 'templates');
+      if (Directory(p.join(templatesDir, 'flutter_webgl_basic')).existsSync() ||
+          Directory(
+            p.join(templatesDir, 'flutter_native_basic'),
+          ).existsSync()) {
+        return templatesDir;
       }
       final parent = dir.parent;
       if (parent.path == dir.path) break;
