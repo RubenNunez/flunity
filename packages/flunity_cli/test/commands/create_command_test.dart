@@ -30,6 +30,7 @@ void main() {
       ..addCommand(CreateCommand(
         logger: Logger(level: Level.error),
         templateRootOverride: fakeTemplateRoot.path,
+        skipFlutterCreate: true,
       ));
 
     final originalCwd = Directory.current;
@@ -60,6 +61,7 @@ void main() {
       ..addCommand(CreateCommand(
         logger: Logger(level: Level.error),
         templateRootOverride: fakeTemplateRoot.path,
+        skipFlutterCreate: true,
       ));
 
     final originalCwd = Directory.current;
@@ -88,6 +90,7 @@ void main() {
       ..addCommand(CreateCommand(
         logger: Logger(level: Level.quiet),
         templateRootOverride: fakeTemplateRoot.path,
+        skipFlutterCreate: true,
       ));
 
     final originalCwd = Directory.current;
@@ -110,6 +113,7 @@ void main() {
       ..addCommand(CreateCommand(
         logger: Logger(level: Level.quiet),
         templateRootOverride: fakeTemplateRoot.path,
+        skipFlutterCreate: true,
       ));
     expect(await runner.run(['create', '--target', 'native_android', 'x']), 64);
   });
@@ -125,6 +129,7 @@ void main() {
       ..addCommand(CreateCommand(
         logger: Logger(level: Level.quiet),
         templateRootOverride: fakeTemplateRoot.path,
+        skipFlutterCreate: true,
       ));
     expect(await runner.run(['create', 'My-App']), 64);
   });

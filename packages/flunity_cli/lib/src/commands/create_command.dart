@@ -2,15 +2,22 @@ import 'dart:io';
 import 'dart:isolate';
 
 import 'package:args/command_runner.dart';
+import 'package:flunity_cli/src/platform/android_cleartext_patcher.dart';
+import 'package:flunity_cli/src/platform/ios_ats_patcher.dart';
 import 'package:flunity_cli/src/templates/template_renderer.dart';
 import 'package:flunity_cli/src/templates/template_vars.dart';
+import 'package:flunity_cli/src/utils/process_runner.dart';
 import 'package:mason_logger/mason_logger.dart';
 import 'package:path/path.dart' as p;
 
 class CreateCommand extends Command<int> {
-  CreateCommand({required Logger logger, String? templateRootOverride})
-      : _logger = logger,
-        _templateRootOverride = templateRootOverride {
+  CreateCommand({
+    required Logger logger,
+    String? templateRootOverride,
+    bool skipFlutterCreate = false,
+  })  : _logger = logger,
+        _templateRootOverride = templateRootOverride,
+        _skipFlutterCreate = skipFlutterCreate {
     argParser
       ..addOption(
         'target',
@@ -26,11 +33,18 @@ class CreateCommand extends Command<int> {
         'no-bridge',
         negatable: false,
         help: 'Use the basic template without bridge wiring.',
+      )
+      ..addOption(
+        'bridge-path',
+        help: 'Absolute path to a local flunity_bridge package. '
+            'When omitted, Flunity tries to auto-detect from the activated CLI location. '
+            'Once flunity_bridge is on pub.dev, this option will go away.',
       );
   }
 
   final Logger _logger;
   final String? _templateRootOverride;
+  final bool _skipFlutterCreate;
 
   @override
   String get name => 'create';
@@ -106,6 +120,73 @@ class CreateCommand extends Command<int> {
       return 70;
     }
 
+    if (!_skipFlutterCreate) {
+      final flutterAppDir = p.join(outputPath, 'flutter_app');
+
+      // Step 1: flutter create (generates ios/, android/, macos/, etc.)
+      _logger.info('');
+      final flutterCreate = _logger.progress(
+        'Generating platform projects via flutter create',
+      );
+      try {
+        await runOrThrow(
+          'flutter',
+          [
+            'create',
+            '--org', argResults!['org'] as String,
+            '--project-name', appName,
+            '--platforms', 'ios,android,macos',
+            '.',
+          ],
+          workingDirectory: flutterAppDir,
+        );
+        flutterCreate.complete('Platform projects ready');
+      } catch (e) {
+        flutterCreate.fail();
+        _logger.err('flutter create failed: $e');
+        return 70;
+      }
+
+      // Step 2: iOS ATS + Android cleartext patchers.
+      IosAtsPatcher.patch(p.join(flutterAppDir, 'ios', 'Runner', 'Info.plist'));
+      AndroidCleartextPatcher.patch(
+        androidAppDir: p.join(flutterAppDir, 'android', 'app'),
+      );
+
+      // Step 3: pubspec_overrides.yaml — point at the local flunity_bridge so
+      // `flutter pub get` doesn't fail until flunity_bridge is on pub.dev.
+      final bridgePath = (argResults!['bridge-path'] as String?) ??
+          _detectFlunityBridgePath();
+      if (bridgePath != null) {
+        File(p.join(flutterAppDir, 'pubspec_overrides.yaml'))
+            .writeAsStringSync('''
+dependency_overrides:
+  flunity_bridge:
+    path: $bridgePath
+''');
+      } else {
+        _logger.warn(
+          'flunity_bridge path not detected; flutter pub get may fail. '
+          'Re-run with --bridge-path /absolute/path/to/flunity_bridge.',
+        );
+      }
+
+      // Step 4: flutter pub get.
+      final pubGet = _logger.progress('flutter pub get');
+      try {
+        await runOrThrow(
+          'flutter',
+          ['pub', 'get'],
+          workingDirectory: flutterAppDir,
+        );
+        pubGet.complete('Dependencies resolved');
+      } catch (e) {
+        pubGet.fail();
+        _logger.err('flutter pub get failed: $e');
+        return 70;
+      }
+    }
+
     _logger
       ..info('')
       ..success('Created $appName/. Next steps:')
@@ -151,6 +232,24 @@ class CreateCommand extends Command<int> {
       final candidate = p.join(dir.path, 'templates', 'flutter_webgl_basic');
       if (Directory(candidate).existsSync()) {
         return p.join(dir.path, 'templates');
+      }
+      final parent = dir.parent;
+      if (parent.path == dir.path) break;
+      dir = parent;
+    }
+    return null;
+  }
+
+  /// Tries to find the local `flunity_bridge` package — useful when running
+  /// from a path-source-activated CLI. Walks up from Platform.script looking
+  /// for `packages/flunity_bridge/pubspec.yaml`.
+  String? _detectFlunityBridgePath() {
+    Directory? dir = Directory(p.dirname(Platform.script.toFilePath()));
+    for (var i = 0; i < 8 && dir != null; i++) {
+      final candidate = p.join(dir.path, 'packages', 'flunity_bridge');
+      if (Directory(candidate).existsSync() &&
+          File(p.join(candidate, 'pubspec.yaml')).existsSync()) {
+        return candidate;
       }
       final parent = dir.parent;
       if (parent.path == dir.path) break;
