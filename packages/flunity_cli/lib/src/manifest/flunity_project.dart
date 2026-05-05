@@ -2,7 +2,7 @@ import 'package:path/path.dart' as p;
 
 import 'manifest_schema.dart';
 
-enum FlunityTarget { webgl }
+enum FlunityTarget { webgl, ios, android }
 
 class FlunityProject {
   FlunityProject({
@@ -28,20 +28,51 @@ class FlunityProject {
   }
 
   String get manifestPath => p.join(rootDir, 'flunity.yaml');
+
+  bool get isWebGL => target == FlunityTarget.webgl;
+  bool get isIos => target == FlunityTarget.ios;
+  bool get isAndroid => target == FlunityTarget.android;
+  bool get isNative => isIos || isAndroid;
+
+  /// The Unity build artifact directory for the active [target].
+  ///
+  /// Resolution order:
+  ///   1. `paths.unityBuildOverride` (legacy `unity_build:` field) wins.
+  ///   2. Otherwise `<paths.unityBuilds>/<target.name>` —
+  ///      e.g. `unity_project/Builds/webgl`, `Builds/ios`, `Builds/android`.
+  String get buildDir {
+    final override = paths.unityBuildOverride;
+    if (override != null) return override;
+    return p.join(paths.unityBuilds, target.name);
+  }
 }
 
 class FlunityPaths {
   FlunityPaths({
     required this.flutterApp,
     required this.unityProject,
-    required this.unityBuild,
+    required this.unityBuilds,
     required this.flutterAssets,
+    this.unityBuildOverride,
   });
 
+  /// The Flutter app directory.
   final String flutterApp;
+
+  /// The Unity project root.
   final String unityProject;
-  final String unityBuild;
+
+  /// Parent directory containing per-target build outputs.
+  /// Per-target builds live at `<unityBuilds>/<target.name>` (lowercase).
+  final String unityBuilds;
+
+  /// Asset copy destination for `flunity bundle webgl`.
   final String flutterAssets;
+
+  /// Legacy `unity_build:` field. When set, overrides the per-target
+  /// derivation in [FlunityProject.buildDir]. Accepted for backward
+  /// compatibility with manifests written before Plan F.
+  final String? unityBuildOverride;
 }
 
 class FlunityWebGLSettings {

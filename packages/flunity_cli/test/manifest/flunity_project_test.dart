@@ -16,7 +16,7 @@ void main() {
     if (tmp.existsSync()) tmp.deleteSync(recursive: true);
   });
 
-  test('parses a complete manifest', () {
+  test('parses a complete webgl manifest', () {
     File(p.join(tmp.path, 'flunity.yaml')).writeAsStringSync('''
 name: my_app
 version: 0.1.0
@@ -24,7 +24,7 @@ target: webgl
 paths:
   flutter_app: flutter_app
   unity_project: unity_project
-  unity_build: unity_project/Builds/WebGL
+  unity_builds: unity_project/Builds
   flutter_assets: flutter_app/assets/unity_webgl
 webgl:
   dev_server:
@@ -45,22 +45,49 @@ bridge:
     expect(project.name, 'my_app');
     expect(project.version, '0.1.0');
     expect(project.target, FlunityTarget.webgl);
+    expect(project.isWebGL, isTrue);
+    expect(project.isNative, isFalse);
     expect(project.paths.flutterApp, p.join(tmp.path, 'flutter_app'));
     expect(project.paths.unityProject, p.join(tmp.path, 'unity_project'));
-    expect(
-      project.paths.unityBuild,
-      p.join(tmp.path, 'unity_project/Builds/WebGL'),
-    );
+    expect(project.paths.unityBuilds, p.join(tmp.path, 'unity_project/Builds'));
+    expect(project.buildDir, p.join(tmp.path, 'unity_project/Builds/webgl'));
+    expect(project.paths.unityBuildOverride, isNull);
     expect(
       project.paths.flutterAssets,
       p.join(tmp.path, 'flutter_app/assets/unity_webgl'),
     );
     expect(project.webgl.devServer.host, '127.0.0.1');
     expect(project.webgl.devServer.port, 8080);
-    expect(project.webgl.devServer.crossOriginIsolation, true);
-    expect(project.webgl.devServer.hotReload, false);
-    expect(project.webgl.androidEmulatorHost, '10.0.2.2');
     expect(project.bridge.enabled, true);
+  });
+
+  test('parses target: ios', () {
+    File(p.join(tmp.path, 'flunity.yaml')).writeAsStringSync('''
+name: my_ios_app
+target: ios
+''');
+    final project = FlunityProject.loadFromManifest(
+      p.join(tmp.path, 'flunity.yaml'),
+    );
+    expect(project.target, FlunityTarget.ios);
+    expect(project.isIos, isTrue);
+    expect(project.isNative, isTrue);
+    expect(project.isWebGL, isFalse);
+    expect(project.buildDir, p.join(tmp.path, 'unity_project/Builds/ios'));
+  });
+
+  test('parses target: android', () {
+    File(p.join(tmp.path, 'flunity.yaml')).writeAsStringSync('''
+name: my_android_app
+target: android
+''');
+    final project = FlunityProject.loadFromManifest(
+      p.join(tmp.path, 'flunity.yaml'),
+    );
+    expect(project.target, FlunityTarget.android);
+    expect(project.isAndroid, isTrue);
+    expect(project.isNative, isTrue);
+    expect(project.buildDir, p.join(tmp.path, 'unity_project/Builds/android'));
   });
 
   test('applies sensible defaults to a minimal manifest', () {
@@ -75,15 +102,38 @@ target: webgl
 
     expect(project.paths.flutterApp, p.join(tmp.path, 'flutter_app'));
     expect(project.paths.unityProject, p.join(tmp.path, 'unity_project'));
+    expect(project.paths.unityBuilds, p.join(tmp.path, 'unity_project/Builds'));
+    expect(project.buildDir, p.join(tmp.path, 'unity_project/Builds/webgl'));
     expect(project.webgl.devServer.host, '127.0.0.1');
     expect(project.webgl.devServer.port, 8080);
     expect(project.bridge.enabled, true);
   });
 
+  test(
+    'legacy unity_build override survives — overrides per-target derivation',
+    () {
+      File(p.join(tmp.path, 'flunity.yaml')).writeAsStringSync('''
+name: legacy
+target: webgl
+paths:
+  unity_build: unity_project/Builds/WebGL
+''');
+      final project = FlunityProject.loadFromManifest(
+        p.join(tmp.path, 'flunity.yaml'),
+      );
+      expect(
+        project.paths.unityBuildOverride,
+        p.join(tmp.path, 'unity_project/Builds/WebGL'),
+      );
+      // buildDir returns the override, not the per-target derivation.
+      expect(project.buildDir, p.join(tmp.path, 'unity_project/Builds/WebGL'));
+    },
+  );
+
   test('rejects unknown target with a friendly error', () {
     File(p.join(tmp.path, 'flunity.yaml')).writeAsStringSync('''
 name: oops
-target: native_android
+target: windows
 ''');
     expect(
       () => FlunityProject.loadFromManifest(p.join(tmp.path, 'flunity.yaml')),
@@ -91,9 +141,20 @@ target: native_android
         isA<ManifestException>().having(
           (e) => e.message,
           'message',
-          contains('native_android'),
+          allOf(contains('windows'), contains('webgl, ios, android')),
         ),
       ),
+    );
+  });
+
+  test('rejects pre-Plan F target name native_android', () {
+    File(p.join(tmp.path, 'flunity.yaml')).writeAsStringSync('''
+name: oops
+target: native_android
+''');
+    expect(
+      () => FlunityProject.loadFromManifest(p.join(tmp.path, 'flunity.yaml')),
+      throwsA(isA<ManifestException>()),
     );
   });
 

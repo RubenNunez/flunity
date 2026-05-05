@@ -13,11 +13,11 @@ class UnityBuildCheck implements Check {
 
   @override
   Future<CheckResult> run() async {
-    final indexHtml = File(p.join(project.paths.unityBuild, 'index.html'));
+    final indexHtml = File(p.join(project.buildDir, 'index.html'));
     if (!indexHtml.existsSync()) {
       return CheckResult.warn(
-        'No build at ${project.paths.unityBuild}/index.html',
-        hint: 'Build WebGL from Unity into ${project.paths.unityBuild}/.',
+        'No build at ${project.buildDir}/index.html',
+        hint: 'Build WebGL from Unity into ${project.buildDir}/.',
       );
     }
     final content = indexHtml.readAsStringSync();

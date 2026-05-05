@@ -51,9 +51,9 @@ class _ServeSubcommand extends Command<int> {
     final port =
         int.tryParse((argResults!['port'] as String?) ?? '') ??
         project.webgl.devServer.port;
-    final indexHtml = File('${project.paths.unityBuild}/index.html');
+    final indexHtml = File('${project.buildDir}/index.html');
     if (!indexHtml.existsSync()) {
-      _logger.err('No Unity WebGL build at ${project.paths.unityBuild}/.');
+      _logger.err('No Unity WebGL build at ${project.buildDir}/.');
       _logger.info('Build WebGL from Unity, then re-run.');
       return 1;
     }
@@ -66,16 +66,16 @@ class _ServeSubcommand extends Command<int> {
       'flunity_bridge.js',
     );
     await prepareWebGLBuild(
-      buildDir: project.paths.unityBuild,
+      buildDir: project.buildDir,
       shimSourcePath: shimSourcePath,
     );
 
     final server = await UnityDevServer.start(
-      rootDir: project.paths.unityBuild,
+      rootDir: project.buildDir,
       port: port,
     );
     final url = 'http://$host:${server.port}/';
-    _logger.success('Serving $url (root: ${project.paths.unityBuild})');
+    _logger.success('Serving $url (root: ${project.buildDir})');
     _logger.info('Press Ctrl+C to stop.');
 
     if (argResults!['open'] == true) {
@@ -128,7 +128,7 @@ class _CopySubcommand extends Command<int> {
     final project = _loadProjectOrDie(_logger);
     if (project == null) return 64;
     await prepareWebGLBuild(
-      buildDir: project.paths.unityBuild,
+      buildDir: project.buildDir,
       shimSourcePath: p.join(
         project.paths.unityProject,
         'Assets',
@@ -197,7 +197,7 @@ class _PrepareSubcommand extends Command<int> {
     final project = _loadProjectOrDie(_logger);
     if (project == null) return 64;
     final summary = await prepareWebGLBuild(
-      buildDir: project.paths.unityBuild,
+      buildDir: project.buildDir,
       shimSourcePath: p.join(
         project.paths.unityProject,
         'Assets',

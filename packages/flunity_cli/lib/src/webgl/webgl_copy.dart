@@ -29,7 +29,7 @@ Future<WebGLCopySummary> copyWebGLBuild({
   required FlunityProject project,
   bool clean = false,
 }) async {
-  final src = Directory(project.paths.unityBuild);
+  final src = Directory(project.buildDir);
   if (!src.existsSync() || !File(p.join(src.path, 'index.html')).existsSync()) {
     throw WebGLCopyException(
       'No Unity WebGL build at ${src.path}/index.html — build first.',

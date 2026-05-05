@@ -73,7 +73,7 @@ Future<BridgeInitSummary> initBridge({
 
   // Patch Unity index.html if it exists.
   var patched = false;
-  final indexHtml = File(p.join(project.paths.unityBuild, 'index.html'));
+  final indexHtml = File(p.join(project.buildDir, 'index.html'));
   if (indexHtml.existsSync()) {
     final original = indexHtml.readAsStringSync();
     final updated = patchUnityIndexHtml(original);
