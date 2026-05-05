@@ -133,9 +133,12 @@ class CreateCommand extends Command<int> {
           'flutter',
           [
             'create',
-            '--org', argResults!['org'] as String,
-            '--project-name', appName,
-            '--platforms', 'ios,android,macos',
+            '--org',
+            argResults!['org'] as String,
+            '--project-name',
+            appName,
+            '--platforms',
+            'ios,android,macos',
             '.',
           ],
           workingDirectory: flutterAppDir,
@@ -155,8 +158,8 @@ class CreateCommand extends Command<int> {
 
       // Step 3: pubspec_overrides.yaml — point at the local flunity_bridge so
       // `flutter pub get` doesn't fail until flunity_bridge is on pub.dev.
-      final bridgePath = (argResults!['bridge-path'] as String?) ??
-          _detectFlunityBridgePath();
+      final bridgePath =
+          (argResults!['bridge-path'] as String?) ?? _detectFlunityBridgePath();
       if (bridgePath != null) {
         File(p.join(flutterAppDir, 'pubspec_overrides.yaml'))
             .writeAsStringSync('''

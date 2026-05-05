@@ -7,8 +7,7 @@ import 'package:path/path.dart' as p;
 ///
 /// Idempotent: re-running over an already-patched manifest is a no-op.
 class AndroidCleartextPatcher {
-  static const String _networkConfig =
-      '''<?xml version="1.0" encoding="utf-8"?>
+  static const String _networkConfig = '''<?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
     <domain-config cleartextTrafficPermitted="true">
         <domain includeSubdomains="false">127.0.0.1</domain>
@@ -33,8 +32,7 @@ class AndroidCleartextPatcher {
     final xmlDir = Directory(p.join(androidAppDir, 'src', 'main', 'res', 'xml'))
       ..createSync(recursive: true);
     final xmlFile = File(p.join(xmlDir.path, 'network_security_config.xml'));
-    if (!xmlFile.existsSync() ||
-        xmlFile.readAsStringSync() != _networkConfig) {
+    if (!xmlFile.existsSync() || xmlFile.readAsStringSync() != _networkConfig) {
       xmlFile.writeAsStringSync(_networkConfig);
       modified = true;
     }
@@ -54,8 +52,7 @@ class AndroidCleartextPatcher {
       );
     }
     final injectionPoint = match.end;
-    final patched =
-        '${manifestContent.substring(0, injectionPoint)}'
+    final patched = '${manifestContent.substring(0, injectionPoint)}'
         'android:networkSecurityConfig="@xml/network_security_config"\n        '
         '${manifestContent.substring(injectionPoint)}';
     manifest.writeAsStringSync(patched);

@@ -27,14 +27,17 @@ void main() {
   tearDown(() => tmp.deleteSync(recursive: true));
 
   test('adds networkSecurityConfig attribute and writes the xml file', () {
-    final modified = AndroidCleartextPatcher.patch(androidAppDir: androidAppDir);
+    final modified =
+        AndroidCleartextPatcher.patch(androidAppDir: androidAppDir);
     expect(modified, isTrue);
 
     final manifest = File(
       p.join(androidAppDir, 'src', 'main', 'AndroidManifest.xml'),
     ).readAsStringSync();
-    expect(manifest,
-        contains('android:networkSecurityConfig="@xml/network_security_config"'));
+    expect(
+        manifest,
+        contains(
+            'android:networkSecurityConfig="@xml/network_security_config"'));
 
     final xml = File(
       p.join(androidAppDir, 'src', 'main', 'res', 'xml',
