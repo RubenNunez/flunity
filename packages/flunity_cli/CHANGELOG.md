@@ -14,3 +14,13 @@
 ### Changed
 - `flunity create` now defaults to `flutter_webgl_bridge`. Pass `--no-bridge` for the basic scaffold.
 - `flunity bridge init` now reads from templates instead of inlined string constants.
+- **Breaking:** `flunity create` now runs `flutter create`, patches iOS ATS + Android cleartext, writes `pubspec_overrides.yaml`, and runs `flutter pub get`. Requires `flutter` on PATH.
+- `flunity webgl serve` and `flunity webgl copy` auto-prepare the Unity WebGL build (no more manual `bridge init` after each Unity rebuild).
+
+### Added
+- New `flunity webgl prepare` subcommand.
+- New `--bridge-path` option on `flunity create`.
+
+### Fixed
+- Dev server sets `Content-Encoding: gzip` / `br` for direct `.gz` / `.br` requests.
+- Split `FlunityBridge.cs` so Unity's Add Component finds the MonoBehaviour.
