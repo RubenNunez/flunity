@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 
 #if UNITY_WEBGL && !UNITY_EDITOR
@@ -8,36 +7,11 @@ using System.Runtime.InteropServices;
 
 namespace Flunity {
     /// <summary>
-    /// Bridge between Flutter (host) and Unity (guest). Place a single GameObject
-    /// named "[FlunityBridge]" in your scene and attach this MonoBehaviour to it.
-    /// Unity's SendMessage will dispatch inbound JSON to ReceiveFromFlutter.
-    /// </summary>
-    [DisallowMultipleComponent]
-    public class FlunityBridgeBehaviour : MonoBehaviour {
-        public static FlunityBridgeBehaviour Instance { get; private set; }
-
-        void Awake() {
-            if (Instance != null && Instance != this) {
-                Destroy(this);
-                return;
-            }
-            Instance = this;
-            DontDestroyOnLoad(gameObject);
-        }
-
-        // Called by the JS shim via unityInstance.SendMessage("[FlunityBridge]", "ReceiveFromFlutter", json)
-        public void ReceiveFromFlutter(string json) {
-            FlunityBridge.DispatchInbound(json);
-        }
-    }
-
-    /// <summary>
     /// Static API for game code. Subscribe to <see cref="OnMessage"/> for inbound
     /// messages, call <see cref="Send{T}"/> or <see cref="SendRaw"/> to talk back
     /// to Flutter. WebGL-only — no-ops in the editor and on other platforms.
     /// </summary>
     public static class FlunityBridge {
-        /// <summary>Raised for every inbound message. (type, payloadJson).</summary>
         public static event Action<string, string> OnMessage;
 
 #if UNITY_WEBGL && !UNITY_EDITOR
@@ -45,18 +19,11 @@ namespace Flunity {
         private static extern void FlunityPostMessage(string json);
 #endif
 
-        /// <summary>
-        /// Sends a typed message to Flutter. Payload is JSON-serialized via Unity's
-        /// JsonUtility (so the type must be marked [Serializable] with public fields).
-        /// </summary>
         public static void Send<T>(string type, T payload) {
             string payloadJson = JsonUtility.ToJson(payload ?? default(T));
             SendRaw(type, payloadJson);
         }
 
-        /// <summary>
-        /// Sends a message with an already-serialized payload string.
-        /// </summary>
         public static void SendRaw(string type, string payloadJson) {
             string envelope = "{\"type\":\"" + EscapeJson(type) + "\",\"payload\":" +
                               (string.IsNullOrEmpty(payloadJson) ? "{}" : payloadJson) + "}";
@@ -67,14 +34,10 @@ namespace Flunity {
 #endif
         }
 
-        // Called by FlunityBridgeBehaviour.ReceiveFromFlutter.
         internal static void DispatchInbound(string json) {
-            // Cheap envelope parse to extract `type`. Game code can re-parse the
-            // payload itself with JsonUtility.FromJson when it knows the shape.
             string type = ExtractStringField(json, "type");
             string payload = ExtractObjectField(json, "payload") ?? "{}";
 
-            // Auto-respond to Ping with matching-nonce Pong (smoke test).
             if (type == "ping") {
                 string nonce = ExtractStringField(payload, "nonce") ?? "";
                 SendRaw("pong", "{\"nonce\":\"" + EscapeJson(nonce) + "\"}");
@@ -84,8 +47,6 @@ namespace Flunity {
         }
 
         // ---- Mini JSON helpers ----
-        // Deliberately tiny — game code does its own deserialization for richer
-        // payloads. These exist only so the bridge can introspect the envelope.
 
         static string ExtractStringField(string json, string field) {
             string key = "\"" + field + "\"";
