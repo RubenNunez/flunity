@@ -4,14 +4,14 @@
 
 **Status: pre-alpha.** Under active development. Public API may change without notice until `0.1.0`.
 
-Flunity is a development companion for Flutter + Unity projects. The first supported workflow is lightweight Unity WebGL scenes loaded inside Flutter through a WebView. Native Unity Android/iOS targets are on the roadmap but not yet implemented.
+Flunity is a development companion for Flutter + Unity projects. It supports three Unity build targets — **WebGL** (loaded inside an in-process WebView), **iOS** (UnityFramework.xcframework embedded into the Flutter Runner), and **Android** (`unityLibrary` Gradle module included from the Flutter Android scaffold). Pick a target with `flunity create --target webgl|ios|android`. See [`docs/target-comparison.md`](docs/target-comparison.md) for an honest tradeoff comparison.
 
 ## Packages
 
 | Package | Description |
 | --- | --- |
 | [`flunity_cli`](packages/flunity_cli) | The `flunity` executable: scaffolding, dev server, asset bundling, bridge init. |
-| [`flunity_bridge`](packages/flunity_bridge) | Flutter package: `FlunityWebGLView`, controller, message types, dev/bundled config. |
+| [`flunity_bridge`](packages/flunity_bridge) | Flutter package: `FlunityWebGLView`, `FlunityNativeView`, message types, dev/bundled config, `UnitySceneRoute` helper. |
 
 ## How to
 
@@ -54,11 +54,15 @@ This checks Flutter SDK, Dart SDK, the manifest, your Unity project layout, and 
 
 ### 4. Build the Unity scene
 
-Open `my_app/unity_project/` in Unity 2022.3 LTS (or newer). Build the WebGL target into `unity_project/Builds/WebGL/`.
+Open `my_app/unity_project/` in Unity 6 (6000.x).
+
+For WebGL: build the WebGL target into `unity_project/Builds/webgl/` (or use **Flunity → Build → WebGL** from the Unity menu).
+
+For iOS / Android: run `flunity build ios` (or `flunity build android`) — Flunity invokes Unity in batch mode using the bundled exporter.
 
 ### 5. Run the dev loop
 
-In one terminal:
+**WebGL.** In one terminal:
 
 ```bash
 flunity webgl serve
@@ -76,7 +80,19 @@ The Flutter app boots, loads `http://127.0.0.1:8080/index.html` in a WebView, an
 
 > **Android emulator:** `127.0.0.1` from inside the emulator points to the emulator, not your host. Flunity automatically swaps it for `10.0.2.2`. No action needed.
 
+**iOS / Android.** Bundle the build into the Flutter app, then run:
+
+```bash
+flunity build ios && flunity bundle ios
+cd flutter_app
+flutter run -d ios
+```
+
+(Substitute `android` for the Android target.) Iteration cycle: edit Unity scene → `flunity build <target> && flunity bundle <target>` → `flutter run`.
+
 ### 6. Build for production
+
+For WebGL:
 
 ```bash
 flunity webgl copy
@@ -86,9 +102,20 @@ flutter build apk     # or appbundle, ipa, etc.
 
 `flunity webgl copy` packages the Unity build into `flutter_app/assets/unity_webgl/`. Bundled mode is the Flutter default; the production app loads Unity from inside the asset bundle via a process-local HTTP loopback (Unity WebGL refuses to load via `file://`).
 
+For iOS / Android:
+
+```bash
+flunity build <target>
+flunity bundle <target>
+cd flutter_app
+flutter build ipa     # or appbundle
+```
+
+`flunity bundle` copies the Unity export into the right place (`flutter_app/ios/UnityExport/` or `flutter_app/android/unityLibrary/`) and patches the Gradle wiring on Android. iOS still needs a one-time manual Xcode link — see [docs/native-setup.md](docs/native-setup.md).
+
 ## Documentation
 
-See [`docs/`](docs/) — getting started, project structure, WebGL workflow, bridge API, production build, Android emulator notes, and the native roadmap.
+See [`docs/`](docs/) — [getting-started](docs/getting-started.md), [project-structure](docs/project-structure.md), [target-comparison](docs/target-comparison.md), [multi-target builds](docs/multi-target.md), [WebGL workflow](docs/webgl-workflow.md), [native setup](docs/native-setup.md), [scene routing](docs/scene-routing.md), [bridge API](docs/bridge-api.md), [production build](docs/production-build.md), [Android emulator notes](docs/android-emulator.md).
 
 ## License
 
