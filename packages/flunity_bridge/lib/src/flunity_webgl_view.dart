@@ -49,8 +49,14 @@ class _FlunityWebGLViewState extends State<FlunityWebGLView> {
     _transport = InAppWebViewMessageTransport();
     _controller = FlunityWebGLController(transport: _transport);
     if (widget.onReady != null) {
-      // Fire onReady immediately; consumers can call send() — it'll queue.
-      widget.onReady!(_controller!);
+      // Defer the callback to the next frame so consumers can safely call
+      // setState() in response to onReady. Calling it synchronously inside
+      // initState() runs during the parent's build phase, which makes any
+      // setState() in the consumer throw "setState() called during build".
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        widget.onReady!(_controller!);
+      });
     }
     _controller!.messages.listen((m) => widget.onMessage?.call(m));
     _ensureBundledServerIfNeeded();
