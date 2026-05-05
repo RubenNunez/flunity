@@ -123,7 +123,27 @@ class CreateCommand extends Command<int> {
     if (!_skipFlutterCreate) {
       final flutterAppDir = p.join(outputPath, 'flutter_app');
 
-      // Step 1: flutter create (generates ios/, android/, macos/, etc.)
+      // Step 1: pubspec_overrides.yaml FIRST — `flutter create` runs
+      // `pub get` as its last step, and pub get fails without the override
+      // (flunity_bridge isn't on pub.dev yet).
+      final bridgePath =
+          (argResults!['bridge-path'] as String?) ?? _detectFlunityBridgePath();
+      if (bridgePath != null) {
+        File(p.join(flutterAppDir, 'pubspec_overrides.yaml'))
+            .writeAsStringSync('''
+dependency_overrides:
+  flunity_bridge:
+    path: $bridgePath
+''');
+      } else {
+        _logger.warn(
+          'flunity_bridge path not detected; flutter create will fail '
+          'when pub get runs. Re-run with --bridge-path /absolute/path/to/flunity_bridge.',
+        );
+      }
+
+      // Step 2: flutter create (generates ios/, android/, macos/, etc.).
+      // This also runs pub get internally, picking up the override above.
       _logger.info('');
       final flutterCreate = _logger.progress(
         'Generating platform projects via flutter create',
@@ -150,31 +170,14 @@ class CreateCommand extends Command<int> {
         return 70;
       }
 
-      // Step 2: iOS ATS + Android cleartext patchers.
+      // Step 3: iOS ATS + Android cleartext patchers.
       IosAtsPatcher.patch(p.join(flutterAppDir, 'ios', 'Runner', 'Info.plist'));
       AndroidCleartextPatcher.patch(
         androidAppDir: p.join(flutterAppDir, 'android', 'app'),
       );
 
-      // Step 3: pubspec_overrides.yaml — point at the local flunity_bridge so
-      // `flutter pub get` doesn't fail until flunity_bridge is on pub.dev.
-      final bridgePath =
-          (argResults!['bridge-path'] as String?) ?? _detectFlunityBridgePath();
-      if (bridgePath != null) {
-        File(p.join(flutterAppDir, 'pubspec_overrides.yaml'))
-            .writeAsStringSync('''
-dependency_overrides:
-  flunity_bridge:
-    path: $bridgePath
-''');
-      } else {
-        _logger.warn(
-          'flunity_bridge path not detected; flutter pub get may fail. '
-          'Re-run with --bridge-path /absolute/path/to/flunity_bridge.',
-        );
-      }
-
-      // Step 4: flutter pub get.
+      // Step 4: flutter pub get to refresh after the patchers (no-op if
+      // nothing changed, but Android manifest changes can affect pub).
       final pubGet = _logger.progress('flutter pub get');
       try {
         await runOrThrow(
