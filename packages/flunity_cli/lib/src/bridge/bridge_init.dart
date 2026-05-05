@@ -28,6 +28,7 @@ class BridgeInitSummary {
 Future<BridgeInitSummary> initBridge({
   required FlunityProject project,
   required String bridgeVersion,
+  required String templateRoot,
   bool force = false,
 }) async {
   final pubspecPath = p.join(project.paths.flutterApp, 'pubspec.yaml');
@@ -37,35 +38,39 @@ Future<BridgeInitSummary> initBridge({
     constraint: '^$bridgeVersion',
   );
 
-  // Create lib/unity/ scaffolding.
-  final unityDir = Directory(p.join(project.paths.flutterApp, 'lib', 'unity'))
-    ..createSync(recursive: true);
   final created = <String>[];
-  final files = <String, String>{
-    'unity_webgl_screen.dart': _screenSrc,
-    'unity_webgl_bridge.dart': _bridgeSrc,
-    'unity_webgl_config.dart': _configSrc,
-  };
-  for (final entry in files.entries) {
-    final f = File(p.join(unityDir.path, entry.key));
-    if (f.existsSync() && !force) continue;
-    f.writeAsStringSync(entry.value);
-    created.add(f.path);
+
+  // Copy lib/unity/ scaffolding from the flutter_webgl_bridge template.
+  final libUnityDart = p.join(
+    templateRoot,
+    'flutter_webgl_bridge',
+    'flutter_app',
+    'lib',
+    'unity',
+  );
+  if (Directory(libUnityDart).existsSync()) {
+    final destLibUnity = Directory(p.join(project.paths.flutterApp, 'lib', 'unity'))
+      ..createSync(recursive: true);
+    for (final entity in Directory(libUnityDart).listSync()) {
+      if (entity is! File) continue;
+      final destFile = File(p.join(destLibUnity.path, p.basename(entity.path)));
+      if (destFile.existsSync() && !force) continue;
+      destFile.writeAsStringSync(entity.readAsStringSync());
+      created.add(destFile.path);
+    }
   }
 
-  // Copy FlunityBridge.cs (and demo) into Unity Assets/Scripts/.
-  final scriptsDir =
-      Directory(p.join(project.paths.unityProject, 'Assets', 'Scripts'))
-        ..createSync(recursive: true);
-  final csFiles = <String, String>{
-    'FlunityBridge.cs': _bridgeCsPlaceholder,
-    'FlunityBridgeDemo.cs': _bridgeDemoPlaceholder,
-  };
-  for (final entry in csFiles.entries) {
-    final f = File(p.join(scriptsDir.path, entry.key));
-    if (f.existsSync() && !force) continue;
-    f.writeAsStringSync(entry.value);
-    created.add(f.path);
+  // Copy Unity Assets/ from unity_bridge_basic.
+  final unityAssetsSrc = Directory(p.join(
+    templateRoot,
+    'unity_bridge_basic',
+    'unity_project',
+    'Assets',
+  ));
+  if (unityAssetsSrc.existsSync()) {
+    final destAssets = Directory(p.join(project.paths.unityProject, 'Assets'))
+      ..createSync(recursive: true);
+    _copyTree(unityAssetsSrc, destAssets, force, created);
   }
 
   // Patch Unity index.html if it exists.
@@ -87,54 +92,21 @@ Future<BridgeInitSummary> initBridge({
   );
 }
 
-const String _screenSrc = r'''
-import 'package:flunity_bridge/flunity_bridge.dart';
-import 'package:flutter/material.dart';
-import 'unity_webgl_config.dart';
-
-class UnityWebGLScreen extends StatelessWidget {
-  const UnityWebGLScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Unity')),
-      body: FlunityWebGLView(
-        config: resolveFlunityConfig(),
-        onMessage: (m) {
-          // Plan C wires real handlers; for now just log.
-          debugPrint('Flunity message: ${m.type}');
-        },
-      ),
-    );
+void _copyTree(Directory src, Directory dst, bool force, List<String> created) {
+  if (!dst.existsSync()) dst.createSync(recursive: true);
+  for (final entity in src.listSync()) {
+    if (entity is Directory) {
+      _copyTree(
+        entity,
+        Directory(p.join(dst.path, p.basename(entity.path))),
+        force,
+        created,
+      );
+    } else if (entity is File) {
+      final destFile = File(p.join(dst.path, p.basename(entity.path)));
+      if (destFile.existsSync() && !force) continue;
+      destFile.writeAsBytesSync(entity.readAsBytesSync());
+      created.add(destFile.path);
+    }
   }
 }
-''';
-
-const String _bridgeSrc = '''
-// Plan C polishes this file with typed message helpers.
-''';
-
-const String _configSrc = '''
-import 'package:flunity_bridge/flunity_bridge.dart';
-
-FlunityWebGLConfig resolveFlunityConfig() {
-  const mode = String.fromEnvironment('FLUNITY_MODE', defaultValue: 'bundled');
-  if (mode == 'dev') {
-    const host = String.fromEnvironment('FLUNITY_DEV_HOST', defaultValue: '127.0.0.1');
-    const port = int.fromEnvironment('FLUNITY_DEV_PORT', defaultValue: 8080);
-    return FlunityWebGLConfig.dev(host: host, port: port);
-  }
-  return FlunityWebGLConfig.bundled();
-}
-''';
-
-const String _bridgeCsPlaceholder = '''
-// Plan C ships the real FlunityBridge.cs. This placeholder is here so
-// `bridge init` produces a project Unity will compile.
-public static class FlunityBridge {}
-''';
-
-const String _bridgeDemoPlaceholder = '''
-// Plan C ships the real FlunityBridgeDemo.cs.
-''';
