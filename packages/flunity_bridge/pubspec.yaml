@@ -1,5 +1,5 @@
 name: flunity_bridge
-description: Flutter package for embedding Unity WebGL builds inside a Flutter app, with a typed Flutter <-> Unity message bridge.
+description: Flutter package for embedding Unity (WebGL or native iOS / Android) inside a Flutter app, with a typed Flutter <-> Unity message bridge.
 version: 0.1.0
 homepage: https://github.com/RubenNunez/flunity
 repository: https://github.com/RubenNunez/flunity
@@ -19,3 +19,12 @@ dev_dependencies:
   flutter_lints: ^4.0.0
   flutter_test:
     sdk: flutter
+
+flutter:
+  plugin:
+    platforms:
+      ios:
+        pluginClass: FlunityBridgeIosPlugin
+      android:
+        package: com.flunity.bridge
+        pluginClass: FlunityBridgeAndroidPlugin
