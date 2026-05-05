@@ -21,7 +21,8 @@ void main() {
     // Build a minimal fake template tree under tmp/templates/.
     templateRoot = p.join(tmp.path, 'templates');
     final libUnity = Directory(
-      p.join(templateRoot, 'flutter_webgl_bridge', 'flutter_app', 'lib', 'unity'),
+      p.join(
+          templateRoot, 'flutter_webgl_bridge', 'flutter_app', 'lib', 'unity'),
     )..createSync(recursive: true);
     File(p.join(libUnity.path, 'unity_webgl_screen.dart'))
         .writeAsStringSync('// screen');
@@ -34,7 +35,8 @@ void main() {
       'unity_project',
       'Assets',
       'Scripts',
-    ))..createSync(recursive: true);
+    ))
+      ..createSync(recursive: true);
     File(p.join(scripts.path, 'FlunityBridge.cs')).writeAsStringSync('// cs');
   });
 
@@ -42,7 +44,8 @@ void main() {
 
   test('adds dep, copies template files, leaves missing index.html alone',
       () async {
-    final project = FlunityProject.loadFromManifest(p.join(tmp.path, 'flunity.yaml'));
+    final project =
+        FlunityProject.loadFromManifest(p.join(tmp.path, 'flunity.yaml'));
     final summary = await initBridge(
       project: project,
       bridgeVersion: '0.1.0',
@@ -64,7 +67,8 @@ void main() {
   });
 
   test('idempotent without --force', () async {
-    final project = FlunityProject.loadFromManifest(p.join(tmp.path, 'flunity.yaml'));
+    final project =
+        FlunityProject.loadFromManifest(p.join(tmp.path, 'flunity.yaml'));
     final first = await initBridge(
       project: project,
       bridgeVersion: '0.1.0',
@@ -85,15 +89,17 @@ void main() {
         .createSync(recursive: true);
     File(p.join(tmp.path, 'unity_project/Builds/WebGL/index.html'))
         .writeAsStringSync('<html><body></body></html>');
-    final project = FlunityProject.loadFromManifest(p.join(tmp.path, 'flunity.yaml'));
+    final project =
+        FlunityProject.loadFromManifest(p.join(tmp.path, 'flunity.yaml'));
     final summary = await initBridge(
       project: project,
       bridgeVersion: '0.1.0',
       templateRoot: templateRoot,
     );
     expect(summary.indexHtmlPatched, isTrue);
-    final patched = File(p.join(tmp.path, 'unity_project/Builds/WebGL/index.html'))
-        .readAsStringSync();
+    final patched =
+        File(p.join(tmp.path, 'unity_project/Builds/WebGL/index.html'))
+            .readAsStringSync();
     expect(patched, contains('flunity:patch'));
   });
 }

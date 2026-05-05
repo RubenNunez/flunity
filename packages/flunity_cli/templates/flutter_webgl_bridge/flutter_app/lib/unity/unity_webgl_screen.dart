@@ -23,14 +23,16 @@ class _UnityWebGLScreenState extends State<UnityWebGLScreen> {
         actions: [
           IconButton(
             tooltip: 'Ping',
-            onPressed: _bridge == null ? null : () async {
-              try {
-                final nonce = await _bridge!.ping();
-                setState(() => _lastEvent = 'Pong: $nonce');
-              } catch (e) {
-                setState(() => _lastEvent = 'Ping failed: $e');
-              }
-            },
+            onPressed: _bridge == null
+                ? null
+                : () async {
+                    try {
+                      final nonce = await _bridge!.ping();
+                      setState(() => _lastEvent = 'Pong: $nonce');
+                    } catch (e) {
+                      setState(() => _lastEvent = 'Ping failed: $e');
+                    }
+                  },
             icon: const Icon(Icons.network_ping),
           ),
         ],
@@ -58,7 +60,8 @@ class _UnityWebGLScreenState extends State<UnityWebGLScreen> {
               ),
               child: Text(
                 _lastEvent,
-                style: const TextStyle(color: Colors.white, fontFamily: 'monospace'),
+                style: const TextStyle(
+                    color: Colors.white, fontFamily: 'monospace'),
               ),
             ),
           ),

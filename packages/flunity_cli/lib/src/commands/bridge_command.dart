@@ -87,7 +87,8 @@ class _InitSubcommand extends Command<int> {
     Directory? dir = Directory(p.dirname(Platform.script.toFilePath()));
     for (var i = 0; i < 8 && dir != null; i++) {
       final candidate = p.join(dir.path, 'templates', 'flutter_webgl_bridge');
-      if (Directory(candidate).existsSync()) return p.join(dir.path, 'templates');
+      if (Directory(candidate).existsSync())
+        return p.join(dir.path, 'templates');
       final parent = dir.parent;
       if (parent.path == dir.path) break;
       dir = parent;

@@ -27,7 +27,8 @@ void main() {
 
     final indexResp = await get('/index.html');
     expect(indexResp.statusCode, 200);
-    expect(indexResp.headers.value('cross-origin-opener-policy'), 'same-origin');
+    expect(
+        indexResp.headers.value('cross-origin-opener-policy'), 'same-origin');
     expect(indexResp.headers.value('cross-origin-embedder-policy'),
         'require-corp');
 

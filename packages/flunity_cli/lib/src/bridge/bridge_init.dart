@@ -49,8 +49,9 @@ Future<BridgeInitSummary> initBridge({
     'unity',
   );
   if (Directory(libUnityDart).existsSync()) {
-    final destLibUnity = Directory(p.join(project.paths.flutterApp, 'lib', 'unity'))
-      ..createSync(recursive: true);
+    final destLibUnity =
+        Directory(p.join(project.paths.flutterApp, 'lib', 'unity'))
+          ..createSync(recursive: true);
     for (final entity in Directory(libUnityDart).listSync()) {
       if (entity is! File) continue;
       final destFile = File(p.join(destLibUnity.path, p.basename(entity.path)));
