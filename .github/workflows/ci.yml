@@ -14,6 +14,10 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
+          # Pin to the project's declared Flutter baseline (pubspecs require
+          # ^3.38.0 / Dart ^3.10.0). Pinning prevents formatter drift between
+          # local dev and CI when stable advances ahead of our baseline.
+          flutter-version: '3.38.0'
       - run: dart pub global activate melos
       - run: melos bootstrap
       - run: melos run format-check
