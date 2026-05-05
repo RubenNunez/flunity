@@ -20,6 +20,8 @@ export 'package:flunity_bridge/src/messages/load_scene.dart';
 export 'package:flunity_bridge/src/messages/ping.dart';
 export 'package:flunity_bridge/src/messages/pong.dart';
 export 'package:flunity_bridge/src/messages/scene_ready.dart';
+export 'package:flunity_bridge/src/routing/unity_scene_route.dart'
+    show UnitySceneRoute;
 export 'package:flunity_bridge/src/transport/message_transport.dart';
 
 // WebGL transport.
