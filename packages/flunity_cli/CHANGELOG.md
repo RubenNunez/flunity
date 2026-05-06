@@ -37,3 +37,20 @@
 ### Changed (Plan F)
 - iOS / Android cleartext + ATS patchers now only run on `target: webgl` — native templates don't need a 127.0.0.1 exemption.
 - Unity build dir convention: `unity_project/Builds/webgl/` (lowercase, was `WebGL/`); per-target subdirs for `ios/` and `android/`.
+
+### Plan F follow-ups (post-merge stabilization)
+
+- New `flunity build ios --simulator` flag flips `PlayerSettings.iOS.sdkVersion = SimulatorSDK` for the build, restores on exit. Mirrored in Editor menu as **Flunity → Build → iOS (Device)** vs **iOS (Simulator)**.
+- Renamed iOS linker symbol `_FlutterEmbedUnityIos_sendToFlutter` → `_FlunityBridge_sendToFlutter` (in `ProjectExporterIos.cs` `OTHER_LDFLAGS`). Without this every iOS build failed at link time.
+- `FlunityBatchmode` (was `ProjectExporterBatchmode`) — the Unity batch entry point. Old name was a stale upstream reference that broke the Editor scripts' compile.
+- `PlayerSettings.GetScriptingBackend(NamedBuildTarget)` overload (was deprecated `BuildTargetGroup`).
+- `flunity doctor` UnityBuildCheck and `flunity bundle ios` next-steps now correctly reflect the `unityLibrary/` subfolder nesting that the upstream exporter writes to.
+- Editor "Select export directory" dialogs reference Flunity's actual path convention (`<flunity project>/unity_project/Builds/<target>/unityLibrary`) instead of the misleading upstream path.
+
+### Plan K — Outlets
+
+- C# attributes `[FlunityOutlet]` / `[FlunityIdentity]` and `FlunityOutletRegistry` MonoBehaviour shipped in all bridge templates.
+- `FlunityOutletRegistry` scans loaded assemblies on Awake, indexes static + instance outlets, dispatches `outlet_call` / `outlet_find` from `FlunityBridge.OnMessage`. Async (`Task` / `Task<T>`) returns awaited; continuations scheduled on the captured Unity main thread.
+- `FlunityBridgeBehaviour` auto-attaches the registry on Awake — no manual setup.
+- Resolution order: static method → targeted instance → unique singleton instance → "ambiguous" / "not found" with a clear hint.
+- Framework C# scripts (FlunityBridge, FlunityBridgeBehaviour, FlunityOutlet, FlunityOutletRegistry) now grouped under `Assets/Scripts/Flunity/` in all templates — keeps the user-facing top level clean.

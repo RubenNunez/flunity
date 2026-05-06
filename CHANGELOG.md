@@ -46,3 +46,29 @@ Adds `target: ios` and `target: android` next to the existing `target: webgl`. A
 - Doctor now branches per target: WebGL retains the asset / port checks; native targets gain `unity_binary_check` + `xcode_check` (iOS) / `android_sdk_check` (Android).
 - Build directory layout changed to per-target subdirs: `<unity_project>/Builds/<target>/`. The legacy `paths.unity_build:` field is still honored as an override.
 - Four new docs: [native-setup](docs/native-setup.md), [multi-target](docs/multi-target.md), [target-comparison](docs/target-comparison.md), [scene-routing](docs/scene-routing.md).
+
+### Plan F follow-up fixes (post-merge stabilization)
+
+The native iOS / Android path needed a handful of fixes after Plan F merged. Bundled here so they don't get lost:
+
+- `flunity_bridge` Pod opts into native UnityFramework linking by default; `FLUNITY_WEBGL_ONLY=1` env var keeps the WebGL-only mode for apps that don't ship native.
+- iOS linker symbol renamed: `_FlutterEmbedUnityIos_sendToFlutter` → `_FlunityBridge_sendToFlutter`. Without this, every iOS build failed with "Undefined symbol" at link time.
+- New `flunity build ios --simulator` flag flips Unity's iOS Player Settings to Simulator SDK for the build, then restores. Mirrored in the Editor menu as **Flunity → Build → iOS (Device)** vs **iOS (Simulator)**.
+- `flunity_bridge` Pod adds `OTHER_LDFLAGS = -undefined dynamic_lookup` so `_OBJC_CLASS_$_UnityFramework` resolves at runtime against the real framework (the vendored stub xcframework doesn't export the symbol).
+- Stale references renamed: `ProjectExporterBatchmode` → `FlunityBatchmode`, `PlayerSettings.GetScriptingBackend(BuildTargetGroup)` → `NamedBuildTarget` overload (Unity 6 deprecated the former).
+- `flunity doctor` UnityBuildCheck and `flunity bundle ios` next-steps message both now correctly handle the `unityLibrary/` subfolder nesting that the upstream exporter writes to.
+- Editor "Select export directory" dialogs reference the correct Flunity path (`<flunity project>/unity_project/Builds/<target>/unityLibrary`) instead of the misleading upstream `flutter_embed_unity` path.
+
+### Plan K — Outlets
+
+Typed Flutter→Unity invocation + scene discovery, replacing manual `OnMessage` switch-statement dispatch.
+
+- New C# attributes: `[FlunityOutlet]` (any public method, optional name override) and `[FlunityIdentity]` (string field, multi-instance routing). `FlunityOutletRegistry` MonoBehaviour auto-attaches via `FlunityBridgeBehaviour` and scans loaded assemblies via reflection. Supports `void`, `T`, `Task`, `Task<T>` returns; async continuations scheduled on the captured Unity main thread.
+- New Dart API: singleton `flunity.invoke<T>('Class.Method', args:, target:, timeout:)` and `flunity.find('ComponentName')` returning `List<FlunityComponentHandle>`. `handle.invoke(method, args:)` sugar threads target id automatically.
+- New built-in messages: `outlet_call`, `outlet_reply`, `outlet_find`, `outlet_find_reply`.
+- `FlunityOutletException` / `FlunityOutletTimeoutException` / `FlunityNotAttachedException` for the three failure modes. 5s default timeout, configurable per call.
+- `UnityMessageListeners` gains an "always-fanout" hook so the invoker receives replies regardless of which native widget is mounted.
+- Resolution order: static method → targeted instance → unique singleton instance → "ambiguous" / "not found" with a clear hint.
+- Native iOS / Android only in v1; WebGL outlet support is Plan L.
+- Framework C# scripts now grouped under `Assets/Scripts/Flunity/` in all templates.
+- New doc: [outlets.md](docs/outlets.md).
