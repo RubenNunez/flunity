@@ -12,14 +12,33 @@
 /// C's templates do this for generated apps.
 library flunity_bridge;
 
+// ignore_for_file: directives_ordering
+//
+// Exports are intentionally grouped by concern (bridge contract / WebGL /
+// native transport / outlets / routing) for readability. The directives
+// inside each group ARE alphabetically sorted; the overall file just isn't.
+
 // Bridge contract (transport-independent).
 export 'package:flunity_bridge/src/flunity_message.dart';
 export 'package:flunity_bridge/src/messages/built_in.dart'
     show registerBuiltInMessages;
 export 'package:flunity_bridge/src/messages/load_scene.dart';
+export 'package:flunity_bridge/src/messages/outlet_call.dart';
+export 'package:flunity_bridge/src/messages/outlet_find.dart';
+export 'package:flunity_bridge/src/messages/outlet_find_reply.dart'
+    show FlunityComponentRef, OutletFindReply;
+export 'package:flunity_bridge/src/messages/outlet_reply.dart';
 export 'package:flunity_bridge/src/messages/ping.dart';
 export 'package:flunity_bridge/src/messages/pong.dart';
 export 'package:flunity_bridge/src/messages/scene_ready.dart';
+export 'package:flunity_bridge/src/outlets/flunity_invoker.dart'
+    show
+        FlunityComponentHandle,
+        FlunityInvoker,
+        FlunityNotAttachedException,
+        FlunityOutletException,
+        FlunityOutletTimeoutException,
+        flunity;
 export 'package:flunity_bridge/src/routing/unity_scene_route.dart'
     show UnitySceneRoute;
 export 'package:flunity_bridge/src/transport/message_transport.dart';

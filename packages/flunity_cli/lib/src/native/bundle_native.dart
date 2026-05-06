@@ -75,8 +75,9 @@ Future<BundleSummary> bundleIos({required FlunityProject project}) async {
     gradleAlreadyWired: true,
     notes: [
       'Open ${p.join(destination.path, 'Runner.xcworkspace')} in Xcode.',
-      'Drag UnityExport/Unity-iPhone.xcodeproj into the Runner project as a sub-project.',
-      'Under Runner target → Frameworks, Libraries, and Embedded Content, add UnityFramework.xcframework as "Embed & Sign".',
+      'Drag UnityExport/unityLibrary/Unity-iPhone.xcodeproj into the Runner project as a sibling sub-project (only the FIRST time — re-bundling overwrites the path Xcode already references).',
+      'Runner target → General → Frameworks, Libraries, and Embedded Content → + → UnityFramework → Embed & Sign.',
+      'If signing for device, set Team on both Runner AND UnityFramework targets.',
     ],
   );
 }

@@ -17,6 +17,12 @@ namespace Flunity {
             }
             Instance = this;
             DontDestroyOnLoad(gameObject);
+
+            // Auto-attach the outlet registry so [FlunityOutlet]-decorated
+            // methods become callable from Flutter without manual setup.
+            if (gameObject.GetComponent<FlunityOutletRegistry>() == null) {
+                gameObject.AddComponent<FlunityOutletRegistry>();
+            }
         }
 
         // Called by the JS shim via unityInstance.SendMessage("[FlunityBridge]", "ReceiveFromFlutter", json)

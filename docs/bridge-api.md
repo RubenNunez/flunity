@@ -1,5 +1,7 @@
 # Bridge API
 
+> **Looking for the typed Flutter→Unity invoke API?** See [outlets.md](outlets.md). Outlets are the recommended way to call Unity from Flutter for new code; this page covers the lower-level `FlunityMessage` envelope they're built on, plus the manual `OnMessage` event pattern for cases where outlets don't fit — background telemetry streams, multi-receiver fanout, custom routing.
+
 Flutter and Unity exchange JSON messages of the form:
 
 ```json
@@ -14,6 +16,10 @@ Flutter and Unity exchange JSON messages of the form:
 | `pong` | Unity → Flutter | `{ "nonce": "<string>" }` (echoes the ping nonce) |
 | `load_scene` | Flutter → Unity | `{ "scene": "<string>" }` |
 | `scene_ready` | Unity → Flutter | `{}` |
+| `outlet_call` | Flutter → Unity | `{ "name": "Class.Method", "nonce": ..., "target"?, "args"? }` — see [outlets.md](outlets.md) |
+| `outlet_reply` | Unity → Flutter | `{ "nonce": ..., "ok": bool, "value"?, "error"? }` |
+| `outlet_find` | Flutter → Unity | `{ "nonce": ..., "component": "Pet" }` |
+| `outlet_find_reply` | Unity → Flutter | `{ "nonce": ..., "components": [{id, name, path}] }` |
 
 `FlunityBridge.cs` auto-handles `ping` (replies with `pong`). The default `FlunityBridgeDemo.cs` handles `load_scene` and replies with `scene_ready`.
 
@@ -105,3 +111,12 @@ public class MyHandler : MonoBehaviour {
 ```
 
 `FlunityBridge.Send<T>(type, payload)` JSON-serializes `payload` via Unity's `JsonUtility` (so the type must be `[Serializable]` with public fields). For richer scenarios, use `FlunityBridge.SendRaw(type, jsonString)` and serialize yourself.
+
+## When to use this vs. outlets
+
+Reach for `OnMessage` + custom message types when you need:
+- **Stream-style data** — Unity pushes telemetry / scene events on its own cadence; Flutter listens. Outlets are a request/reply RPC, not a stream.
+- **Multi-receiver fanout** — several Flutter widgets each want to react to the same Unity event independently. The `OnMessage` event is multi-listener; outlets correlate to one awaiting `Future`.
+- **Stable wire format you control** — when shipping a public protocol where you don't want to commit to outlet naming conventions or auto-discovery.
+
+For everything else — "tell Unity to do X and let me know when it's done" — use outlets ([outlets.md](outlets.md)). They handle nonce correlation, error routing, async (`Task<T>`), and scene discovery so you don't have to.
