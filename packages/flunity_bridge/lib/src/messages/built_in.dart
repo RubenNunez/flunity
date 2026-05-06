@@ -1,4 +1,8 @@
 import 'package:flunity_bridge/src/messages/load_scene.dart';
+import 'package:flunity_bridge/src/messages/outlet_call.dart';
+import 'package:flunity_bridge/src/messages/outlet_find.dart';
+import 'package:flunity_bridge/src/messages/outlet_find_reply.dart';
+import 'package:flunity_bridge/src/messages/outlet_reply.dart';
 import 'package:flunity_bridge/src/messages/ping.dart';
 import 'package:flunity_bridge/src/messages/pong.dart';
 import 'package:flunity_bridge/src/messages/scene_ready.dart';
@@ -11,4 +15,8 @@ void registerBuiltInMessages() {
   Pong.register();
   LoadScene.register();
   SceneReady.register();
+  OutletCall.register();
+  OutletReply.register();
+  OutletFind.register();
+  OutletFindReply.register();
 }

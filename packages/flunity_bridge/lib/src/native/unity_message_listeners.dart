@@ -26,12 +26,28 @@ class UnityMessageListeners {
   );
   final List<UnityMessageListener> _listeners = <UnityMessageListener>[];
 
+  /// Always-fanout listeners. Bypass [FlunityNativePreferences] — every
+  /// callback in this list receives every inbound message, no matter which
+  /// widget is mounted. Used by the outlet invoker so `outlet_reply` /
+  /// `outlet_find_reply` always reach the awaiting [Future], regardless of
+  /// which `FlunityNativeView` (if any) is currently on screen.
+  final List<void Function(String)> _alwaysListeners =
+      <void Function(String)>[];
+
   void addListener(UnityMessageListener listener) {
     _listeners.add(listener);
   }
 
   void removeListener(UnityMessageListener listener) {
     _listeners.remove(listener);
+  }
+
+  void addAlwaysListener(void Function(String) callback) {
+    _alwaysListeners.add(callback);
+  }
+
+  void removeAlwaysListener(void Function(String) callback) {
+    _alwaysListeners.remove(callback);
   }
 
   Future<dynamic> _methodCallHandler(MethodCall call) async {
@@ -47,6 +63,11 @@ class UnityMessageListeners {
         if (_listeners.isNotEmpty) {
           _listeners.last.onMessageFromUnity(data);
         }
+    }
+    // Always-fanout listeners run regardless of preferences — invoker depends
+    // on this to correlate replies even when no widget is currently mounted.
+    for (final cb in _alwaysListeners) {
+      cb(data);
     }
     return null;
   }
