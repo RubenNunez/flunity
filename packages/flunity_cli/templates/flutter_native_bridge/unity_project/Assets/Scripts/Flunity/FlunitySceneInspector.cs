@@ -27,11 +27,21 @@ namespace Flunity {
     [DisallowMultipleComponent]
     public class FlunitySceneInspector : MonoBehaviour {
 
+        // Default depth cap for Tree(). Real-world scenes (TriForge,
+        // ProBuilder, hand-authored hierarchies) routinely exceed 6–8
+        // levels. We cap at 6 by default to keep payloads small enough
+        // for the iOS MethodChannel to round-trip in well under a second.
+        // Override per call via `args.maxDepth`.
+        const int DefaultTreeMaxDepth = 6;
+
         [FlunityOutlet("Flunity.Scene.Tree")]
-        public FlunityRawJson Tree() {
+        public FlunityRawJson Tree(TreeArgs args) {
+            int maxDepth = (args == null || args.maxDepth <= 0)
+                ? DefaultTreeMaxDepth : args.maxDepth;
             var sb = new StringBuilder(4096);
             sb.Append("{\"nodes\":[");
             bool first = true;
+            int truncated = 0;
             // SceneManager.sceneCount covers every loaded scene including
             // additive ones. We emit a synthetic root per scene so the
             // Flutter tree view can group GameObjects by their owning
@@ -43,11 +53,17 @@ namespace Flunity {
                 string sceneId = "scene:" + scene.name;
                 WriteSceneNodeJson(sb, scene.name, sceneId, ref first);
                 foreach (var go in scene.GetRootGameObjects()) {
-                    WriteNodeJson(sb, go, parentId: sceneId, ref first);
+                    WriteNodeJson(sb, go, sceneId, ref first, depth: 1, maxDepth: maxDepth, ref truncated);
                 }
             }
-            sb.Append("]}");
-            return new FlunityRawJson(sb.ToString());
+            sb.Append("],\"maxDepth\":").Append(maxDepth)
+              .Append(",\"truncated\":").Append(truncated)
+              .Append('}');
+            string json = sb.ToString();
+            if (json.Length > 100_000) {
+                Debug.Log($"[Flunity] Tree payload {json.Length / 1024} KB ({truncated} subtrees truncated at depth {maxDepth})");
+            }
+            return new FlunityRawJson(json);
         }
 
         void WriteSceneNodeJson(StringBuilder sb, string sceneName, string sceneId, ref bool first) {
@@ -63,15 +79,21 @@ namespace Flunity {
               .Append('}');
         }
 
-        void WriteNodeJson(StringBuilder sb, GameObject go, string parentId, ref bool first) {
+        void WriteNodeJson(StringBuilder sb, GameObject go, string parentId, ref bool first,
+                           int depth, int maxDepth, ref int truncated) {
             if (!first) sb.Append(',');
             first = false;
+            int childCount = go.transform.childCount;
+            bool truncatedHere = depth >= maxDepth && childCount > 0;
+            if (truncatedHere) truncated++;
             sb.Append('{')
               .Append("\"id\":\"").Append(go.GetInstanceID()).Append('"')
               .Append(",\"parentId\":\"").Append(EscapeJson(parentId)).Append('"')
               .Append(",\"name\":\"").Append(EscapeJson(go.name)).Append('"')
               .Append(",\"active\":").Append(go.activeInHierarchy ? "true" : "false")
               .Append(",\"kind\":\"go\"")
+              .Append(",\"truncated\":").Append(truncatedHere ? "true" : "false")
+              .Append(",\"childCount\":").Append(childCount)
               .Append(",\"components\":[");
             bool firstComp = true;
             foreach (var c in go.GetComponents<Component>()) {
@@ -81,9 +103,43 @@ namespace Flunity {
                 sb.Append('"').Append(EscapeJson(c.GetType().Name)).Append('"');
             }
             sb.Append("]}");
-            foreach (Transform child in go.transform) {
-                WriteNodeJson(sb, child.gameObject, go.GetInstanceID().ToString(), ref first);
+            if (!truncatedHere) {
+                foreach (Transform child in go.transform) {
+                    WriteNodeJson(sb, child.gameObject, go.GetInstanceID().ToString(), ref first,
+                                  depth + 1, maxDepth, ref truncated);
+                }
             }
+        }
+
+        [FlunityOutlet("Flunity.Scene.Children")]
+        public FlunityRawJson Children(ChildrenArgs args) {
+            if (args == null || string.IsNullOrEmpty(args.parentId)) {
+                return new FlunityRawJson("{\"nodes\":[]}");
+            }
+            // Resolve parent by instance id. Same lookup as Inspect.
+            GameObject parent = null;
+            if (int.TryParse(args.parentId, out int parentIid)) {
+                foreach (var go in Resources.FindObjectsOfTypeAll<GameObject>()) {
+                    if (go == null || !go.scene.IsValid()) continue;
+                    if (go.GetInstanceID() == parentIid) { parent = go; break; }
+                }
+            }
+            if (parent == null) {
+                return new FlunityRawJson("{\"nodes\":[]}");
+            }
+            int maxDepth = (args.maxDepth <= 0) ? 1 : args.maxDepth;
+            var sb = new StringBuilder(2048);
+            sb.Append("{\"nodes\":[");
+            bool first = true;
+            int truncated = 0;
+            foreach (Transform child in parent.transform) {
+                WriteNodeJson(sb, child.gameObject, args.parentId, ref first,
+                              depth: 1, maxDepth: maxDepth, ref truncated);
+            }
+            sb.Append("],\"maxDepth\":").Append(maxDepth)
+              .Append(",\"truncated\":").Append(truncated)
+              .Append('}');
+            return new FlunityRawJson(sb.ToString());
         }
 
         [FlunityOutlet("Flunity.Scene.Inspect")]
@@ -204,5 +260,26 @@ namespace Flunity {
     [System.Serializable]
     public class InspectArgs {
         public string id;
+    }
+
+    /// <summary>
+    /// Optional args for <see cref="FlunitySceneInspector.Tree"/>. Pass
+    /// `{"maxDepth": N}` from Flutter to override the default cap.
+    /// </summary>
+    [System.Serializable]
+    public class TreeArgs {
+        public int maxDepth;
+    }
+
+    /// <summary>
+    /// Args for <see cref="FlunitySceneInspector.Children"/>. Returns
+    /// the GameObjects that are direct children of the GameObject with
+    /// instance id <c>parentId</c>, recursing up to `maxDepth` levels
+    /// (default 1).
+    /// </summary>
+    [System.Serializable]
+    public class ChildrenArgs {
+        public string parentId;
+        public int maxDepth;
     }
 }
