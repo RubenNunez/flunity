@@ -254,14 +254,6 @@ class FlunityInvoker {
       return;
     }
 
-    // Diagnostic — pair with Unity's "outlet_reply tx" line. If Unity logs
-    // tx but this rx doesn't fire, the message got lost between Unity's
-    // SendRaw and the Flutter MethodChannel handler.
-    flunityLogs.log(
-      'outlet_reply rx: type=$type bytes=${raw.length}',
-      level: FlunityLogLevel.info,
-    );
-
     final FlunityMessage parsed;
     try {
       parsed = FlunityMessage.fromJson(json);

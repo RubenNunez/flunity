@@ -310,10 +310,6 @@ namespace Flunity {
             string valueJson = SerializeReturn(value);
             string payload = "{\"nonce\":\"" + EscapeJson(nonce) +
                              "\",\"ok\":true,\"value\":" + valueJson + "}";
-            // Diagnostic: pair with Flutter's incoming "outlet_reply rx" line.
-            // If you see this Unity log but no rx on Flutter, the reply got
-            // lost between SendRaw and the Flutter MethodChannel handler.
-            Debug.Log($"[Flunity] outlet_reply tx: nonce={nonce} bytes={payload.Length}");
             FlunityBridge.SendRaw("outlet_reply", payload);
         }
 
@@ -321,7 +317,6 @@ namespace Flunity {
             string payload = "{\"nonce\":\"" + EscapeJson(nonce) +
                              "\",\"ok\":false,\"value\":null,\"error\":\"" +
                              EscapeJson(error) + "\"}";
-            Debug.Log($"[Flunity] outlet_reply tx (error): nonce={nonce} error={error}");
             FlunityBridge.SendRaw("outlet_reply", payload);
         }
 
