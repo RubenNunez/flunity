@@ -116,7 +116,7 @@ internal class ProjectExportChecker
         return false;
 #endif
 
-        if (PlayerSettings.GetScriptingBackend(EditorUserBuildSettings.selectedBuildTargetGroup) != ScriptingImplementation.IL2CPP)
+        if (PlayerSettings.GetScriptingBackend(namedBuildTarget) != ScriptingImplementation.IL2CPP)
         {
             ProjectExportHelpers.ShowErrorMessage("You must set IL2CPP as the scripting backend " +
                 "(see File -> Build settings -> Player Settings -> Other Settings -> Scripting backend)");
@@ -137,7 +137,7 @@ internal class ProjectExportChecker
                 "(see File -> Build settings -> Player Settings -> Other Settings -> IL2CPP code generation)");
         }
 
-        Il2CppCompilerConfiguration il2CppCompilerConfiguration = PlayerSettings.GetIl2CppCompilerConfiguration(buildTargetGroup);
+        Il2CppCompilerConfiguration il2CppCompilerConfiguration = PlayerSettings.GetIl2CppCompilerConfiguration(namedBuildTarget);
         if (il2CppCompilerConfiguration == Il2CppCompilerConfiguration.Debug)
         {
             precheckWarnings.Add($"'C++ compiler configuration' is set to 'Debug'. This can be useful for debugging during development " +
