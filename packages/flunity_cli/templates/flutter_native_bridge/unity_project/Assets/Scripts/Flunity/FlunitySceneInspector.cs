@@ -25,15 +25,36 @@ namespace Flunity {
 
         [FlunityOutlet("Flunity.Scene.Tree")]
         public SceneTree Tree() {
-            var roots = new List<SceneNode>();
+            // Flat list of nodes, parent referenced by id. Avoids
+            // JsonUtility's hard 10-level recursion cap (real scenes —
+            // anything with nested prefabs — go deeper). Flutter
+            // rebuilds the tree client-side from parentId.
+            var flat = new List<SceneNodeFlat>();
             for (int i = 0; i < SceneManager.sceneCount; i++) {
                 var scene = SceneManager.GetSceneAt(i);
                 if (!scene.isLoaded) continue;
                 foreach (var go in scene.GetRootGameObjects()) {
-                    roots.Add(BuildNode(go));
+                    Walk(go, parentId: "", into: flat);
                 }
             }
-            return new SceneTree { roots = roots.ToArray() };
+            return new SceneTree { nodes = flat.ToArray() };
+        }
+
+        void Walk(GameObject go, string parentId, List<SceneNodeFlat> into) {
+            var componentNames = new List<string>();
+            foreach (var c in go.GetComponents<Component>()) {
+                if (c != null) componentNames.Add(c.GetType().Name);
+            }
+            into.Add(new SceneNodeFlat {
+                id = go.GetInstanceID().ToString(),
+                parentId = parentId,
+                name = go.name,
+                active = go.activeInHierarchy,
+                components = componentNames.ToArray()
+            });
+            foreach (Transform child in go.transform) {
+                Walk(child.gameObject, go.GetInstanceID().ToString(), into);
+            }
         }
 
         [FlunityOutlet("Flunity.Scene.Inspect")]
@@ -102,24 +123,6 @@ namespace Flunity {
 
         // ---------- helpers ----------
 
-        SceneNode BuildNode(GameObject go) {
-            var componentNames = new List<string>();
-            foreach (var c in go.GetComponents<Component>()) {
-                if (c != null) componentNames.Add(c.GetType().Name);
-            }
-            var children = new List<SceneNode>();
-            foreach (Transform child in go.transform) {
-                children.Add(BuildNode(child.gameObject));
-            }
-            return new SceneNode {
-                id = go.GetInstanceID().ToString(),
-                name = go.name,
-                active = go.activeInHierarchy,
-                components = componentNames.ToArray(),
-                children = children.ToArray()
-            };
-        }
-
         static string ScenePathOf(GameObject go) {
             var parts = new List<string>();
             for (var t = go.transform; t != null; t = t.parent) {
@@ -137,18 +140,26 @@ namespace Flunity {
         }
     }
 
+    /// <summary>
+    /// Flat representation of the scene graph. Nodes know their parent
+    /// by id; clients (e.g. the Flutter Inspector) rebuild the tree
+    /// client-side. Avoids `JsonUtility.ToJson`'s hard 10-level recursion
+    /// cap which would silently fail on any non-trivial scene.
+    /// </summary>
     [System.Serializable]
     public class SceneTree {
-        public SceneNode[] roots;
+        public SceneNodeFlat[] nodes;
     }
 
     [System.Serializable]
-    public class SceneNode {
+    public class SceneNodeFlat {
+        /// Unity InstanceID as string. Pass to Flunity.Scene.Inspect.
         public string id;
+        /// Parent's id, or empty string for scene-root GameObjects.
+        public string parentId;
         public string name;
         public bool active;
         public string[] components;
-        public SceneNode[] children;
     }
 
     [System.Serializable]
