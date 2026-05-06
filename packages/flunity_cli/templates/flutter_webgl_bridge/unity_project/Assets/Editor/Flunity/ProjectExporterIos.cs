@@ -45,14 +45,15 @@ internal class ProjectExporterIos : ProjectExporter
         pbxProject.ReadFromFile(pbxProjFileInfo.FullName);
         pbxProject.SetBuildProperty(pbxProject.ProjectGuid(), "ENABLE_BITCODE", "NO");
 
-        // To be able to pass messages from Unity C# to the iOS part of the plugin (which then passes the message on to Flutter) 
-        // the C# file you include in your Unity project declares (but does not define) a function called `FlutterEmbedUnityIos_sendToFlutter`.
-        // This function is instead defined in the plugin. To join these two things together, we need to tell Xcode to ignore the fact that 
-        // `FlutterEmbedUnityIos_sendToFlutter` is not defined in the Unity module, and instead link it to the definition in the plugin.
-        // `-Wl` allows us to pass additional options to the linker when it is invoked
-        // `-U` tells the linker to force the symbol `_FlutterEmbedUnityIos_sendToFlutter` to be entered in the output file as an undefined 
-        //      symbol. It will be linked instead to a function defined in the plugin.
-        pbxProject.AddBuildProperty(pbxProject.ProjectGuid(), "OTHER_LDFLAGS", "-Wl,-U,_FlutterEmbedUnityIos_sendToFlutter");
+        // To be able to pass messages from Unity C# to the iOS part of the plugin (which then passes the message on to Flutter)
+        // the C# file you include in your Unity project declares (but does not define) a function called `FlunityBridge_sendToFlutter`.
+        // This function is instead defined in the plugin (see flunity_bridge/ios/.../Messaging/SendToFlutter.swift's @_cdecl).
+        // To join these two things together, we tell Xcode to ignore the fact that `FlunityBridge_sendToFlutter` is not defined
+        // in the Unity module, and instead link it to the definition in the plugin.
+        // `-Wl` passes options through to the linker.
+        // `-U` forces the symbol `_FlunityBridge_sendToFlutter` to be entered in the output as an undefined symbol;
+        //      it is then resolved at link time against the flunity_bridge framework.
+        pbxProject.AddBuildProperty(pbxProject.ProjectGuid(), "OTHER_LDFLAGS", "-Wl,-U,_FlunityBridge_sendToFlutter");
 
         // Change the Data folder Target Membership
         // This allows us to embed the Unity engine and the Unity game easily into the Flutter app as a single unit

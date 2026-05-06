@@ -18,7 +18,7 @@ let package = Package(
             // This is important. The default linking type is `static` - override this to `dynamic`.
             // Without this, archive builds (eg TestFlight, ad-hoc Release Testing, production release)
             // will crash on startup with the following error:
-            // > symbol not found in flat namespace '_FlutterEmbedUnityIos_sendToFlutter'
+            // > symbol not found in flat namespace '_FlunityBridge_sendToFlutter'
             // The reason is complex. See https://github.com/learntoflutter/flutter_embed_unity/issues/74
             type: .dynamic,
             targets: ["flunity_bridge"])
