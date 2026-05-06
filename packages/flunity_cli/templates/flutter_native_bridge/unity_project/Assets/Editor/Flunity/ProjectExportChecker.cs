@@ -109,6 +109,109 @@ internal class ProjectExportChecker
         }
     }
 
+    /// <summary>
+    /// Same as <see cref="PreCheckIos"/> but skips the folder picker and writes
+    /// to <paramref name="knownPath"/> directly. Used by <c>FlunityMenu</c>
+    /// (Editor menu items) to bypass the upstream dialog when the canonical
+    /// Flunity path is already deterministic from the manifest.
+    /// </summary>
+    internal ProjectExportCheckerResult PreCheckIosWithKnownPath(string knownPath)
+    {
+        if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.iOS)
+        {
+            ProjectExportHelpers.ShowErrorMessage("Can't export until you change the build target to iOS: see File -> Build Profiles -> Platform, then Switch Target");
+            return ProjectExportCheckerResult.Failure();
+        }
+
+        List<string> precheckWarnings = new();
+        if (!PreCheckCommon(ref precheckWarnings, NamedBuildTarget.iOS, BuildTargetGroup.iOS))
+        {
+            return ProjectExportCheckerResult.Failure();
+        }
+
+        if (EditorUserBuildSettings.iOSXcodeBuildConfig == XcodeBuildConfig.Debug)
+        {
+            precheckWarnings.Add("iOS XCode build configuration is set to 'debug'. This should be set to 'release' for release builds");
+        }
+
+        return BuildOptionsForKnownPath(knownPath, "ios", "unityLibrary", precheckWarnings);
+    }
+
+    /// <summary>
+    /// Same as <see cref="PreCheckAndroid"/> but skips the folder picker and
+    /// writes to <paramref name="knownPath"/>. Used by <c>FlunityMenu</c>.
+    /// </summary>
+    internal ProjectExportCheckerResult PreCheckAndroidWithKnownPath(string knownPath)
+    {
+        if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.Android)
+        {
+            ProjectExportHelpers.ShowErrorMessage("Can't export until you change the build target to Android: see File -> Build Profiles -> Platform, then Switch Target");
+            return ProjectExportCheckerResult.Failure();
+        }
+
+        List<string> precheckWarnings = new();
+        if (!PreCheckCommon(ref precheckWarnings, NamedBuildTarget.Android, BuildTargetGroup.Android))
+        {
+            return ProjectExportCheckerResult.Failure();
+        }
+
+        if (!EditorUserBuildSettings.exportAsGoogleAndroidProject)
+        {
+            ProjectExportHelpers.ShowErrorMessage("Can't export until you tick 'Export project': see File -> Build Profiles");
+            return ProjectExportCheckerResult.Failure();
+        }
+
+        AndroidArchitecture architectures = PlayerSettings.Android.targetArchitectures;
+        if (!architectures.HasFlag(AndroidArchitecture.ARMv7) || !architectures.HasFlag(AndroidArchitecture.ARM64))
+        {
+            ProjectExportHelpers.ShowErrorMessage("You must include ARMv7 and ARM64 as target architectures " +
+                "(see File -> Build settings -> Player Settings -> Other Settings -> Target architectures)");
+            return ProjectExportCheckerResult.Failure();
+        }
+
+        return BuildOptionsForKnownPath(knownPath, "android", "unityLibrary", precheckWarnings);
+    }
+
+    /// <summary>
+    /// Builds a <see cref="BuildPlayerOptions"/> targeting the given known
+    /// path, creating the folder if missing and wiping any existing contents
+    /// — no dialogs, no validation against magic suffixes. The folder
+    /// picker that <see cref="PrepareExportDirectory"/> shows is upstream
+    /// cargo from flutter_embed_unity; for Flunity the path is already
+    /// deterministic so we skip it.
+    /// </summary>
+    private ProjectExportCheckerResult BuildOptionsForKnownPath(
+        string knownPath, string subfolderName, string folderName, List<string> precheckWarnings)
+    {
+        Directory.CreateDirectory(knownPath);
+        DirectoryInfo selectedDirectory = new DirectoryInfo(knownPath);
+
+        BuildOptions buildOptions = BuildOptions.None;
+        if (EditorUserBuildSettings.development) buildOptions |= BuildOptions.Development;
+        if (EditorUserBuildSettings.connectProfiler) buildOptions |= BuildOptions.ConnectWithProfiler;
+        if (EditorUserBuildSettings.allowDebugging) buildOptions |= BuildOptions.AllowDebugging;
+
+        BuildPlayerOptions buildPlayerOptions = new BuildPlayerOptions
+        {
+            scenes = EditorBuildSettings.scenes
+                .Where(s => s.enabled)
+                .Select(s => s.path)
+                .ToArray(),
+            target = EditorUserBuildSettings.activeBuildTarget,
+            locationPathName = selectedDirectory.FullName,
+            options = buildOptions
+        };
+
+        if (Directory.GetFileSystemEntries(buildPlayerOptions.locationPathName).Length != 0)
+        {
+            Debug.Log($"Flunity: wiping existing contents of {selectedDirectory.FullName}");
+            Directory.Delete(selectedDirectory.FullName, true);
+            Directory.CreateDirectory(selectedDirectory.FullName);
+        }
+
+        return ProjectExportCheckerResult.Success(buildPlayerOptions, precheckWarnings);
+    }
+
     private bool PreCheckCommon(ref List<string> precheckWarnings, NamedBuildTarget namedBuildTarget, BuildTargetGroup buildTargetGroup)
     {
 #if !UNITY_6000

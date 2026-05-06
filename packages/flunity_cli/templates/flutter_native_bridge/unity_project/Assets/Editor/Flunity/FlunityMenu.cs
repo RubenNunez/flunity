@@ -13,11 +13,12 @@ public class FlunityMenu : EditorWindow
     [MenuItem("Flunity/Build/Android")]
     static void ExportProjectAndroid()
     {
-        EnsureBuildsPath("android");
-        ProjectExportCheckerResult result = projectExportChecker.PreCheckAndroid();
+        string exportPath = ResolveExportPath("android");
+        ProjectExportCheckerResult result = projectExportChecker.PreCheckAndroidWithKnownPath(exportPath);
 
 #if UNITY_ANDROID
-        if(result.IsSuccessful) {
+        if (result.IsSuccessful)
+        {
             new ProjectExporterAndroid().Export(result.BuildPlayerOptions, result.PrecheckWarnings);
         }
 #endif
@@ -38,12 +39,12 @@ public class FlunityMenu : EditorWindow
     static void RunIosExport(iOSSdkVersion sdk)
     {
 #if UNITY_IOS
-        EnsureBuildsPath("ios");
+        string exportPath = ResolveExportPath("ios");
         iOSSdkVersion originalSdk = PlayerSettings.iOS.sdkVersion;
         PlayerSettings.iOS.sdkVersion = sdk;
         try
         {
-            ProjectExportCheckerResult result = projectExportChecker.PreCheckIos();
+            ProjectExportCheckerResult result = projectExportChecker.PreCheckIosWithKnownPath(exportPath);
             if (result.IsSuccessful)
             {
                 new ProjectExporterIos().Export(result.BuildPlayerOptions, result.PrecheckWarnings);
@@ -57,18 +58,18 @@ public class FlunityMenu : EditorWindow
     }
 
     /// <summary>
-    /// Pre-create `<unity project>/Builds/<target>/unityLibrary/` so the
-    /// folder picker has somewhere to land on first run. Without this the
-    /// upstream picker rejects the user's selection because the canonical
-    /// Flunity path doesn't exist yet, and they have to "New Folder" three
-    /// times in a row.
+    /// Resolve the canonical Flunity export path for a given target —
+    /// `<unity project>/Builds/<target>/unityLibrary/`. This matches what
+    /// `flunity build <target>` from the terminal uses, so the menu and
+    /// CLI write to the same place. No dialog, no folder picker, no
+    /// "create the folder first" friction — the path is fully deterministic
+    /// from the project layout.
     /// </summary>
-    static void EnsureBuildsPath(string targetSubfolder)
+    static string ResolveExportPath(string targetSubfolder)
     {
         // Application.dataPath returns `<projectRoot>/Assets`; trim that to
-        // get the project root.
+        // get the Unity project root.
         string projectRoot = Path.GetDirectoryName(Application.dataPath);
-        string buildsTarget = Path.Combine(projectRoot, "Builds", targetSubfolder, "unityLibrary");
-        Directory.CreateDirectory(buildsTarget);
+        return Path.Combine(projectRoot, "Builds", targetSubfolder, "unityLibrary");
     }
 }
