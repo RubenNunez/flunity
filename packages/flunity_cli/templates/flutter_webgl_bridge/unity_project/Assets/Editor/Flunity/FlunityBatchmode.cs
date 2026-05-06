@@ -83,20 +83,51 @@ public class FlunityBatchmode
 
         Debug.Log("Exporting iOS project in batchmode.");
 
-        
+
         // Using UNITY_IOS preprocessor because 'using UnityEditor.iOS.Xcode' is only available with iOS build tools
         ProjectExportCheckerResult result = projectExportChecker.PreCheckIos();
 #if UNITY_IOS
-        if(result.IsSuccessful) {
-            new ProjectExporterIos().Export(result.BuildPlayerOptions, result.PrecheckWarnings);
-        } else
+        // Flunity: honor `-flunitySdk simulator` (or `-flunitySdk device`) so
+        // `flunity build ios --simulator` produces a Simulator-SDK Xcode
+        // project. We restore the original setting on exit so the Editor's
+        // persisted PlayerSettings aren't surprise-mutated for the next user.
+        string sdkArg = GetArg("-flunitySdk");
+        UnityEditor.iOSSdkVersion originalSdk = PlayerSettings.iOS.sdkVersion;
+        bool sdkChanged = false;
+        if (sdkArg == "simulator")
         {
-            throw new System.Exception("iOS PreBuid checks failed.");
+            Debug.Log("Flunity: targeting iOS Simulator SDK for this build.");
+            PlayerSettings.iOS.sdkVersion = UnityEditor.iOSSdkVersion.SimulatorSDK;
+            sdkChanged = true;
+        }
+        else if (sdkArg == "device")
+        {
+            PlayerSettings.iOS.sdkVersion = UnityEditor.iOSSdkVersion.DeviceSDK;
+            sdkChanged = true;
+        }
+
+        try
+        {
+            if (result.IsSuccessful)
+            {
+                new ProjectExporterIos().Export(result.BuildPlayerOptions, result.PrecheckWarnings);
+            }
+            else
+            {
+                throw new System.Exception("iOS PreBuid checks failed.");
+            }
+        }
+        finally
+        {
+            if (sdkChanged)
+            {
+                PlayerSettings.iOS.sdkVersion = originalSdk;
+            }
         }
 #else
         throw new System.Exception("Build platform is not iOS.");
 #endif
-        
+
     }
 
 

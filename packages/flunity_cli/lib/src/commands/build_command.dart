@@ -16,12 +16,21 @@ import 'package:mason_logger/mason_logger.dart';
 /// stream output, and surface non-zero exit codes.
 class BuildCommand extends Command<int> {
   BuildCommand({required Logger logger}) : _logger = logger {
-    argParser.addOption(
-      'unity',
-      help:
-          'Path to the Unity Editor binary. Defaults to \$UNITY_PATH or the '
-          'highest version detected in Unity Hub install locations.',
-    );
+    argParser
+      ..addOption(
+        'unity',
+        help:
+            'Path to the Unity Editor binary. Defaults to \$UNITY_PATH or the '
+            'highest version detected in Unity Hub install locations.',
+      )
+      ..addFlag(
+        'simulator',
+        negatable: false,
+        help:
+            'iOS only: target the Simulator SDK instead of the Device SDK. '
+            'Equivalent to flipping Player Settings → iOS → Target SDK = '
+            '"Simulator SDK" for this build only.',
+      );
   }
 
   final Logger _logger;
@@ -70,6 +79,12 @@ class BuildCommand extends Command<int> {
     }
     exportDir.createSync(recursive: true);
 
+    final simulator = argResults!['simulator'] == true;
+    if (simulator && target != FlunityTarget.ios) {
+      _logger.err('--simulator is only valid with --target ios.');
+      return 64;
+    }
+
     final args = [
       '-batchmode',
       '-nographics',
@@ -82,6 +97,10 @@ class BuildCommand extends Command<int> {
       _unityExecuteMethod(target),
       '-exportPath',
       project.buildDir,
+      if (target == FlunityTarget.ios) ...[
+        '-flunitySdk',
+        simulator ? 'simulator' : 'device',
+      ],
       '-logFile',
       '-',
     ];
