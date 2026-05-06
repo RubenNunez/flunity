@@ -44,7 +44,22 @@ namespace Flunity {
             if (!int.TryParse(args.id, out int instanceId)) {
                 return new InspectResult { found = false, error = "id must be an integer" };
             }
-            var obj = Resources.InstanceIDToObject(instanceId) as GameObject;
+
+            // Find the GameObject by InstanceID. Unity 6 deprecated
+            // `Resources.InstanceIDToObject(int)` in favour of
+            // `Resources.EntityIdToObject(EntityId)`. We iterate via
+            // FindObjectsOfTypeAll instead — runs once per inspect call,
+            // so the O(N) cost is fine, and it's portable across all
+            // Unity 6 patches without depending on the new EntityId type.
+            GameObject obj = null;
+            foreach (var go in Resources.FindObjectsOfTypeAll<GameObject>()) {
+                if (go == null) continue;
+                if (!go.scene.IsValid()) continue; // skip prefabs in assets
+                if (go.GetInstanceID() == instanceId) {
+                    obj = go;
+                    break;
+                }
+            }
             if (obj == null) {
                 return new InspectResult { found = false, error = "no GameObject with that InstanceID in any loaded scene" };
             }
