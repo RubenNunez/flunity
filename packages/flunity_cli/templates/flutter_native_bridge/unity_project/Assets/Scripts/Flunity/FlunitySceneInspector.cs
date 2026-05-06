@@ -38,10 +38,20 @@ namespace Flunity {
 
         [FlunityOutlet("Flunity.Scene.Tree")]
         public FlunityRawJson Tree() {
+            // Diagnostic on entry/exit — if Flutter sees a Tree timeout
+            // without these landing in the log sheet, the registry
+            // dispatched but the method hung; with them, the method
+            // finished but the reply got lost on the wire (likely a
+            // stale UnityFramework — iOS dyld doesn't reload .frameworks
+            // on Flutter hot restart, so re-run `flunity bundle ios`
+            // and reinstall).
+            int sceneCount = SceneManager.sceneCount;
+            Debug.Log($"[Flunity.Scene] Tree() begin (scenes={sceneCount})");
             var sb = new StringBuilder(2048);
             sb.Append("{\"nodes\":[");
             bool first = true;
-            for (int i = 0; i < SceneManager.sceneCount; i++) {
+            int rootCount = 0;
+            for (int i = 0; i < sceneCount; i++) {
                 var scene = SceneManager.GetSceneAt(i);
                 if (!scene.isLoaded) continue;
                 string sceneId = "scene:" + scene.name;
@@ -51,9 +61,11 @@ namespace Flunity {
                 // on demand via Flunity.Scene.Children.
                 foreach (var go in scene.GetRootGameObjects()) {
                     WriteNodeJson(sb, go, sceneId, ref first);
+                    rootCount++;
                 }
             }
             sb.Append("]}");
+            Debug.Log($"[Flunity.Scene] Tree() end (roots={rootCount}, bytes={sb.Length})");
             return new FlunityRawJson(sb.ToString());
         }
 
@@ -100,6 +112,7 @@ namespace Flunity {
 
         [FlunityOutlet("Flunity.Scene.Children")]
         public FlunityRawJson Children(ChildrenArgs args) {
+            Debug.Log($"[Flunity.Scene] Children(parentId={args?.parentId})");
             if (args == null || string.IsNullOrEmpty(args.parentId)) {
                 return new FlunityRawJson("{\"nodes\":[]}");
             }
