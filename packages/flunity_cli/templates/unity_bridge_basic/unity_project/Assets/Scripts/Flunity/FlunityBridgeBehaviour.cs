@@ -30,6 +30,13 @@ namespace Flunity {
             if (gameObject.GetComponent<FlunityLogStreamer>() == null) {
                 gameObject.AddComponent<FlunityLogStreamer>();
             }
+
+            // Auto-attach the scene inspector so Flutter's Inspector tab can
+            // call Flunity.Scene.Tree() / Flunity.Scene.Inspect() without
+            // any user setup.
+            if (gameObject.GetComponent<FlunitySceneInspector>() == null) {
+                gameObject.AddComponent<FlunitySceneInspector>();
+            }
         }
 
         // Called by the JS shim via unityInstance.SendMessage("[FlunityBridge]", "ReceiveFromFlutter", json)
