@@ -2,7 +2,9 @@
 // Original: https://github.com/learntoflutter/flutter_embed_unity
 // See packages/flunity_bridge/THIRDPARTY.md for full attribution.
 
+using System.IO;
 using UnityEditor;
+using UnityEngine;
 
 public class FlunityMenu : EditorWindow
 {
@@ -11,6 +13,7 @@ public class FlunityMenu : EditorWindow
     [MenuItem("Flunity/Build/Android")]
     static void ExportProjectAndroid()
     {
+        EnsureBuildsPath("android");
         ProjectExportCheckerResult result = projectExportChecker.PreCheckAndroid();
 
 #if UNITY_ANDROID
@@ -35,6 +38,7 @@ public class FlunityMenu : EditorWindow
     static void RunIosExport(iOSSdkVersion sdk)
     {
 #if UNITY_IOS
+        EnsureBuildsPath("ios");
         iOSSdkVersion originalSdk = PlayerSettings.iOS.sdkVersion;
         PlayerSettings.iOS.sdkVersion = sdk;
         try
@@ -50,5 +54,21 @@ public class FlunityMenu : EditorWindow
             PlayerSettings.iOS.sdkVersion = originalSdk;
         }
 #endif
+    }
+
+    /// <summary>
+    /// Pre-create `<unity project>/Builds/<target>/unityLibrary/` so the
+    /// folder picker has somewhere to land on first run. Without this the
+    /// upstream picker rejects the user's selection because the canonical
+    /// Flunity path doesn't exist yet, and they have to "New Folder" three
+    /// times in a row.
+    /// </summary>
+    static void EnsureBuildsPath(string targetSubfolder)
+    {
+        // Application.dataPath returns `<projectRoot>/Assets`; trim that to
+        // get the project root.
+        string projectRoot = Path.GetDirectoryName(Application.dataPath);
+        string buildsTarget = Path.Combine(projectRoot, "Builds", targetSubfolder, "unityLibrary");
+        Directory.CreateDirectory(buildsTarget);
     }
 }
