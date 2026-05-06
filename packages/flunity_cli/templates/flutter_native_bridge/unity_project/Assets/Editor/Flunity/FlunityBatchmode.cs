@@ -26,7 +26,7 @@ public class FlunityBatchmode
     // -buildTarget Android
     // -buildTarget iOS
     //
-    // <unity path> -projectPath <unity project path> -batchmode -buildTarget Android -executeMethod ProjectExporterBatchmode.ExportProject -exportPath <output path> -quit
+    // <unity path> -projectPath <unity project path> -batchmode -buildTarget Android -executeMethod FlunityBatchmode.ExportProject -exportPath <output path> -quit
 
     public static void ExportProject()
     {

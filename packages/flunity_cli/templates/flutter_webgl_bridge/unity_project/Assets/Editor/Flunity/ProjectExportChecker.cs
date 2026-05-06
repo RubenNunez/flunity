@@ -229,7 +229,7 @@ internal class ProjectExportChecker
             return PrepareExportDirectory(subfolderName, folderName, precheckWarnings);
         }
 
-        string path = ProjectExporterBatchmode.GetExportPath();
+        string path = FlunityBatchmode.GetExportPath();
         if(path == null)
         {
             ProjectExportHelpers.ShowErrorMessage("No -exportPath command line argument found");
