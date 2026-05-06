@@ -4,6 +4,8 @@ Outlets replace the manual `FlunityBridge.OnMessage` switch-statement dispatch w
 
 **Status: native iOS / Android only in v1.** WebGL invoker support lands in Plan L.
 
+> **Tip:** while developing, the in-app Inspector tab (jellx ships an example, ~300 lines, reusable) lets you call any outlet from a typed terminal: `call Class.Method` / `find Component` / `tree`. Catches typos and missing instances in seconds. See [debugging.md](debugging.md).
+
 ## Quick start
 
 **Unity:**

@@ -20,6 +20,7 @@ Flutter and Unity exchange JSON messages of the form:
 | `outlet_reply` | Unity → Flutter | `{ "nonce": ..., "ok": bool, "value"?, "error"? }` |
 | `outlet_find` | Flutter → Unity | `{ "nonce": ..., "component": "Pet" }` |
 | `outlet_find_reply` | Unity → Flutter | `{ "nonce": ..., "components": [{id, name, path}] }` |
+| `flunity_log` | Unity → Flutter | `{ "level": "info\|warn\|error", "message": ..., "stackTrace"? }` — auto-emitted by `FlunityLogStreamer`; consumed by `FlunityLogStream`. See [debugging.md](debugging.md). |
 
 `FlunityBridge.cs` auto-handles `ping` (replies with `pong`). The default `FlunityBridgeDemo.cs` handles `load_scene` and replies with `scene_ready`.
 
