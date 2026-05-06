@@ -158,8 +158,10 @@ internal class ProjectExportChecker
 
         bool confirmOpenFolderSelection = EditorUtility.DisplayDialog(
                     "Select export directory",
-                    "In the next window, select the export directory. This should be " +
-                    $"'<your flutter project>/{subfolderName}/{folderName}'",
+                    "In the next window, select the export directory. For Flunity " +
+                    $"projects this is '<flunity project>/unity_project/Builds/{subfolderName}/{folderName}' " +
+                    $"(create the folder if it doesn't exist).\n\nTip: `flunity build {subfolderName}` " +
+                    "from a terminal handles this automatically — no dialog.",
                     "Select folder",
                     "Cancel");
 
@@ -196,8 +198,9 @@ internal class ProjectExportChecker
 
             if (!selectedDirectory.Name.Equals(folderName) || selectedDirectory.Parent == null || selectedDirectory.Parent.Name != subfolderName)
             {
-                ProjectExportHelpers.ShowErrorMessage($"Expected a folder named {folderName} inside '{subfolderName}' folder. " +
-                    $"Check the plugin documentation: you need to select '<your flutter project>/{subfolderName}/{folderName}'. " +
+                ProjectExportHelpers.ShowErrorMessage($"Expected a folder named '{folderName}' inside '{subfolderName}' folder. " +
+                    $"For Flunity projects this is '<flunity project>/unity_project/Builds/{subfolderName}/{folderName}'. " +
+                    $"Tip: `flunity build {subfolderName}` from a terminal handles this for you. " +
                     "Aborting export");
                 return ProjectExportCheckerResult.Failure();
             }
@@ -279,8 +282,9 @@ internal class ProjectExportChecker
 
         if (!selectedDirectory.Name.Equals(folderName) || selectedDirectory.Parent == null || selectedDirectory.Parent.Name != subfolderName)
         {
-            ProjectExportHelpers.ShowErrorMessage($"Expected a folder named {folderName} inside '{subfolderName}' folder. " +
-                $"Check the plugin documentation: you need to select '<your flutter project>/{subfolderName}/{folderName}'. " +
+            ProjectExportHelpers.ShowErrorMessage($"Expected a folder named '{folderName}' inside '{subfolderName}' folder. " +
+                $"For Flunity batchmode the canonical path is '<flunity project>/unity_project/Builds/{subfolderName}/{folderName}' — " +
+                "this is what `flunity build " + subfolderName + "` passes via -exportPath. " +
                 "Aborting export");
             return ProjectExportCheckerResult.Failure();
         }
