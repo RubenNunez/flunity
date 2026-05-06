@@ -130,6 +130,12 @@ namespace Flunity {
             string target = ExtractStringField(payloadJson, "target");
             string argsJson = ExtractObjectField(payloadJson, "args");
 
+            // Diagnostic: confirm receipt at the registry. If Flutter sends
+            // an outlet_call and never sees this entry in the log sheet,
+            // the call didn't reach Unity (bridge GameObject missing,
+            // SendMessage routing broken, etc.).
+            Debug.Log($"[Flunity] outlet_call rx: {name} target={target ?? "(none)"} nonce={nonce}");
+
             if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(nonce)) {
                 Debug.LogError($"[Flunity] outlet_call missing name/nonce: {payloadJson}");
                 return;
