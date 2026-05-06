@@ -24,15 +24,11 @@ void main() {
   });
 
   test('OutletFindReply round-trips two components', () {
-    final reply = OutletFindReply(
+    const reply = OutletFindReply(
       nonce: 'n1',
       components: [
-        const FlunityComponentRef(
-          id: 'bunny',
-          name: 'Pet',
-          path: 'Forest/Trees/Pet',
-        ),
-        const FlunityComponentRef(
+        FlunityComponentRef(id: 'bunny', name: 'Pet', path: 'Forest/Trees/Pet'),
+        FlunityComponentRef(
           id: '12345',
           name: 'Pet',
           path: 'Forest/Trees/Pet (1)',
@@ -49,7 +45,7 @@ void main() {
 
   test('FlunityComponentRef.fromJson rejects missing fields', () {
     expect(
-      () => FlunityComponentRef.fromJson({'id': 'x', 'name': 'Pet'}),
+      () => FlunityComponentRef.fromJson(const {'id': 'x', 'name': 'Pet'}),
       throwsA(isA<FormatException>()),
     );
   });

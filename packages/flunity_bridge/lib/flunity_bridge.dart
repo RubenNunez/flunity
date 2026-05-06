@@ -31,7 +31,7 @@ export 'package:flunity_bridge/src/messages/outlet_reply.dart';
 export 'package:flunity_bridge/src/messages/ping.dart';
 export 'package:flunity_bridge/src/messages/pong.dart';
 export 'package:flunity_bridge/src/messages/scene_ready.dart';
-export 'package:flunity_bridge/src/logs/flunity_log_stream.dart'
+export 'package:flunity_bridge/src/logging/flunity_log_stream.dart'
     show
         FlunityLogEntry,
         FlunityLogLevel,

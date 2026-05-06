@@ -6,7 +6,7 @@ void main() {
   setUp(OutletCall.register);
 
   test('serializes with required fields only', () {
-    final call = const OutletCall(name: 'PetController.Feed', nonce: 'n1');
+    const call = OutletCall(name: 'PetController.Feed', nonce: 'n1');
     expect(call.toJson(), {
       'type': 'outlet_call',
       'payload': {'name': 'PetController.Feed', 'nonce': 'n1'},
@@ -14,7 +14,7 @@ void main() {
   });
 
   test('serializes with optional target + args', () {
-    final call = const OutletCall(
+    const call = OutletCall(
       name: 'Pet.Feed',
       nonce: 'n2',
       target: 'bunny',

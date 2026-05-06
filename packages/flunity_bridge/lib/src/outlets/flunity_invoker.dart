@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flunity_bridge/src/flunity_message.dart';
+import 'package:flunity_bridge/src/logging/flunity_log_stream.dart';
 import 'package:flunity_bridge/src/messages/outlet_call.dart';
 import 'package:flunity_bridge/src/messages/outlet_find.dart';
 import 'package:flunity_bridge/src/messages/outlet_find_reply.dart';
@@ -134,14 +135,27 @@ class FlunityInvoker {
       target: target,
       args: args,
     );
+    flunityLogs.log(_formatOutletCall(call), level: FlunityLogLevel.info);
     await _sendEnvelope(call);
 
     try {
       final result = await completer.future;
+      flunityLogs.log(
+        '→ outlet_reply $name (nonce $nonce) ok value=${_truncate(result)}',
+        level: FlunityLogLevel.info,
+      );
       return result as T?;
-    } on FlunityOutletException {
+    } on FlunityOutletException catch (e) {
+      flunityLogs.log(
+        '→ outlet_reply $name (nonce $nonce) error: ${e.unityMessage}',
+        level: FlunityLogLevel.error,
+      );
       rethrow;
     } on FlunityOutletTimeoutException {
+      flunityLogs.log(
+        '→ outlet_reply $name (nonce $nonce) TIMEOUT after $timeout',
+        level: FlunityLogLevel.warn,
+      );
       rethrow;
     } on TypeError catch (e) {
       throw FlunityOutletException(
@@ -149,6 +163,18 @@ class FlunityInvoker {
         '$T: $e',
       );
     }
+  }
+
+  static String _formatOutletCall(OutletCall c) {
+    final argSummary = c.args == null || c.args!.isEmpty ? '' : ' ${c.args}';
+    final tgt = c.target == null ? '' : ' target=${c.target}';
+    return '← outlet_call ${c.name}$tgt (nonce ${c.nonce})$argSummary';
+  }
+
+  static String _truncate(Object? value, {int max = 80}) {
+    if (value == null) return 'null';
+    final s = value.toString();
+    return s.length <= max ? s : '${s.substring(0, max)}…';
   }
 
   /// Query Unity for every loaded MonoBehaviour whose class is named
@@ -172,9 +198,19 @@ class FlunityInvoker {
     );
 
     final find = OutletFind(nonce: nonce, component: componentName);
+    flunityLogs.log(
+      '← outlet_find $componentName (nonce $nonce)',
+      level: FlunityLogLevel.info,
+    );
     await _sendEnvelope(find);
 
     final raw = await completer.future;
+    if (raw is List<FlunityComponentRef>) {
+      flunityLogs.log(
+        '→ outlet_find_reply $componentName (nonce $nonce) → ${raw.length} matches',
+        level: FlunityLogLevel.info,
+      );
+    }
     if (raw is! List<FlunityComponentRef>) {
       throw FlunityOutletException(
         'find($componentName) returned non-list payload: $raw',

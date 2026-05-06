@@ -6,7 +6,7 @@ void main() {
   setUp(OutletReply.register);
 
   test('serializes a successful reply', () {
-    final reply = const OutletReply(nonce: 'n1', ok: true, value: 42);
+    const reply = OutletReply(nonce: 'n1', ok: true, value: 42);
     expect(reply.toJson(), {
       'type': 'outlet_reply',
       'payload': {'nonce': 'n1', 'ok': true, 'value': 42},
@@ -14,7 +14,7 @@ void main() {
   });
 
   test('serializes an error reply with both value:null and error', () {
-    final reply = const OutletReply(nonce: 'n2', ok: false, error: 'boom');
+    const reply = OutletReply(nonce: 'n2', ok: false, error: 'boom');
     expect(reply.toJson(), {
       'type': 'outlet_reply',
       'payload': {'nonce': 'n2', 'ok': false, 'value': null, 'error': 'boom'},
