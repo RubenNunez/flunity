@@ -38,9 +38,16 @@ adapted from flutter_embed_unity v2.0.0 (MIT).
   s.platform         = :ios, '14.0'
 
   # Flutter.framework does not contain an i386 slice.
+  # `-undefined dynamic_lookup` defers UnityFramework class symbols
+  # (`_OBJC_CLASS_$_UnityFramework` etc.) to runtime — the consuming app
+  # embeds the real UnityFramework via its Runner target's "Embed Frameworks"
+  # phase, where dyld resolves them. The vendored stub xcframework is just
+  # a structural placeholder; it doesn't actually export the symbols Swift
+  # `import UnityFramework` needs at link time.
   s.pod_target_xcconfig = {
     'DEFINES_MODULE' => 'YES',
     'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'i386',
+    'OTHER_LDFLAGS' => '$(inherited) -undefined dynamic_lookup',
   }
   s.swift_version = '5.0'
 
