@@ -39,7 +39,15 @@ namespace Flunity {
         readonly Dictionary<string, Type> _instanceOutletDeclaringType =
             new Dictionary<string, Type>();
 
+        // Captured at Awake on the Unity main thread. Async outlet
+        // continuations are scheduled here so reply dispatch (and any
+        // Unity / JNI calls inside it) stay on the main thread.
+        TaskScheduler _mainThreadScheduler = TaskScheduler.Default;
+
         void Awake() {
+            if (System.Threading.SynchronizationContext.Current != null) {
+                _mainThreadScheduler = TaskScheduler.FromCurrentSynchronizationContext();
+            }
             ScanAssemblies();
             FlunityBridge.OnMessage += HandleInbound;
         }
@@ -198,9 +206,16 @@ namespace Flunity {
                 return;
             }
 
-            // Async support: await Task / Task<T> before replying.
+            // Async support: await Task / Task<T> before replying. Schedule
+            // the continuation on the captured main-thread scheduler so
+            // ReplyAfterTask + any Unity / JNI calls inside it stay on the
+            // main thread.
             if (result is Task task) {
-                task.ContinueWith(t => ReplyAfterTask(nonce, name, t));
+                task.ContinueWith(
+                    t => ReplyAfterTask(nonce, name, t),
+                    System.Threading.CancellationToken.None,
+                    TaskContinuationOptions.None,
+                    _mainThreadScheduler);
                 return;
             }
             ReplyOk(nonce, result);
