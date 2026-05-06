@@ -23,6 +23,13 @@ namespace Flunity {
             if (gameObject.GetComponent<FlunityOutletRegistry>() == null) {
                 gameObject.AddComponent<FlunityOutletRegistry>();
             }
+
+            // Auto-attach the log streamer so Unity Debug.Log / LogWarning /
+            // LogError lines are forwarded to Flutter as `flunity_log`
+            // bridge messages. Flutter consumes them via FlunityLogStream.
+            if (gameObject.GetComponent<FlunityLogStreamer>() == null) {
+                gameObject.AddComponent<FlunityLogStreamer>();
+            }
         }
 
         // Called by the JS shim via unityInstance.SendMessage("[FlunityBridge]", "ReceiveFromFlutter", json)

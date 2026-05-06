@@ -31,6 +31,13 @@ export 'package:flunity_bridge/src/messages/outlet_reply.dart';
 export 'package:flunity_bridge/src/messages/ping.dart';
 export 'package:flunity_bridge/src/messages/pong.dart';
 export 'package:flunity_bridge/src/messages/scene_ready.dart';
+export 'package:flunity_bridge/src/logs/flunity_log_stream.dart'
+    show
+        FlunityLogEntry,
+        FlunityLogLevel,
+        FlunityLogSource,
+        FlunityLogStream,
+        flunityLogs;
 export 'package:flunity_bridge/src/outlets/flunity_invoker.dart'
     show
         FlunityComponentHandle,
