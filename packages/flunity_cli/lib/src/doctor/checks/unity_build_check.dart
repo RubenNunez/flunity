@@ -45,26 +45,45 @@ class UnityBuildCheck implements Check {
   }
 
   Future<CheckResult> _runIos() async {
-    final pbxproj = File(
+    // The vendored upstream exporter writes to <buildDir>/unityLibrary/
+    // (a hard-coded subfolder convention). Accept either nesting so users
+    // who pre-flatten the export aren't false-flagged.
+    final candidates = [
+      p.join(
+        project.buildDir,
+        'unityLibrary',
+        'Unity-iPhone.xcodeproj',
+        'project.pbxproj',
+      ),
       p.join(project.buildDir, 'Unity-iPhone.xcodeproj', 'project.pbxproj'),
-    );
-    if (!pbxproj.existsSync()) {
-      return CheckResult.warn(
-        'No iOS export at ${project.buildDir}/.',
-        hint: 'Run `flunity build ios` to produce the Unity Xcode export.',
-      );
+    ];
+    for (final c in candidates) {
+      if (File(c).existsSync()) {
+        return CheckResult.ok(
+          'Found Unity iOS export at ${p.dirname(p.dirname(c))}',
+        );
+      }
     }
-    return CheckResult.ok('Found Unity iOS export at ${project.buildDir}');
+    return CheckResult.warn(
+      'No iOS export at ${project.buildDir}/.',
+      hint: 'Run `flunity build ios` to produce the Unity Xcode export.',
+    );
   }
 
   Future<CheckResult> _runAndroid() async {
-    final gradleFile = File(p.join(project.buildDir, 'build.gradle'));
-    if (!gradleFile.existsSync()) {
-      return CheckResult.warn(
-        'No Android export at ${project.buildDir}/.',
-        hint: 'Run `flunity build android` to produce the unityLibrary module.',
-      );
+    // Same nesting as iOS — exporter writes to <buildDir>/unityLibrary/.
+    final candidates = [
+      p.join(project.buildDir, 'unityLibrary', 'build.gradle'),
+      p.join(project.buildDir, 'build.gradle'),
+    ];
+    for (final c in candidates) {
+      if (File(c).existsSync()) {
+        return CheckResult.ok('Found Unity Android export at ${p.dirname(c)}');
+      }
     }
-    return CheckResult.ok('Found Unity Android export at ${project.buildDir}');
+    return CheckResult.warn(
+      'No Android export at ${project.buildDir}/.',
+      hint: 'Run `flunity build android` to produce the unityLibrary module.',
+    );
   }
 }
