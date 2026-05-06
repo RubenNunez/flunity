@@ -4,6 +4,7 @@
 
 import Flutter
 
+#if canImport(UnityFramework)
 class SendToUnity {
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
             switch call.method {
@@ -43,3 +44,18 @@ class SendToUnity {
             }
     }
 }
+#else
+class SendToUnity {
+    public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+        switch call.method {
+        case NativeConstants.methodNameSendToUnity,
+             NativeConstants.methodNamePauseUnity,
+             NativeConstants.methodNameResumeUnity:
+            debugPrint("flunity_bridge iOS: native UnityFramework unavailable (WebGL-only mode).")
+            result(false)
+        default:
+            result(FlutterMethodNotImplemented)
+        }
+    }
+}
+#endif

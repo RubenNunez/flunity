@@ -19,18 +19,15 @@ public class FlunityBridgeIosPlugin: NSObject, FlutterPlugin {
         
         // Register channel with SendToFlutter so it can send messages back to Flutter
         SendToFlutter.methodChannel = channel
-        
-        // Register a view factory
-        // On the Flutter side, when we create a PlatformView with our unique identifier:
-        // UiKitView(
-        //    viewType: Constants.uniqueViewIdentifier,
-        // )
-        // the UnityViewFactory will be invoked to create a UnityPlatformView:
+
+        #if canImport(UnityFramework)
+        // Register a native Unity platform view only when UnityFramework exists.
         let platformViewFactory = UnityViewFactory(messenger: registrar.messenger())
         registrar.register(
             platformViewFactory,
             withId: NativeConstants.uniqueIdentifier,
             gestureRecognizersBlockingPolicy: FlutterPlatformViewGestureRecognizersBlockingPolicyWaitUntilTouchesEnded)
+        #endif
     }
     
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
