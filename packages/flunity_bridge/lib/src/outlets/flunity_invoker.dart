@@ -84,6 +84,13 @@ class FlunityComponentHandle {
 /// reply listener are wired once at construction time.
 class FlunityInvoker {
   FlunityInvoker._() {
+    // Register the typed reply factories the invoker depends on. Doing this
+    // here (rather than relying on the consumer's main() to call
+    // registerBuiltInMessages) means `flunity.invoke(...)` works out of the
+    // box — without it, FlunityMessage.fromJson silently downgrades replies
+    // to RawMessage and every call times out. Idempotent.
+    OutletReply.register();
+    OutletFindReply.register();
     UnityMessageListeners.instance.addAlwaysListener(_onMessage);
   }
 

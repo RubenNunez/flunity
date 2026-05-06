@@ -7,9 +7,11 @@
 ///   instance via the bundled platform plugin. Top-level helpers
 ///   [sendToUnity], [pauseUnity], [resumeUnity] target the active instance.
 ///
-/// Consumers must call [registerBuiltInMessages] once at app startup
-/// (typically in `main()`) before any [FlunityMessage.fromJson] calls. Plan
-/// C's templates do this for generated apps.
+/// `flunity.invoke` and the log stream work out of the box — no setup call
+/// required. If you parse raw envelopes via [FlunityMessage.fromJson] for
+/// the other built-ins (Ping/Pong/LoadScene/SceneReady), call
+/// [registerBuiltInMessages] once at app startup so those types resolve
+/// to their typed factories instead of a [RawMessage].
 library flunity_bridge;
 
 // ignore_for_file: directives_ordering
