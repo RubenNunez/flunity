@@ -20,14 +20,34 @@ public class FlunityMenu : EditorWindow
 #endif
     }
 
-    [MenuItem("Flunity/Build/iOS")]
-    static void ExportProjectIos()
+    [MenuItem("Flunity/Build/iOS (Device)")]
+    static void ExportProjectIosDevice() => RunIosExport(iOSSdkVersion.DeviceSDK);
+
+    [MenuItem("Flunity/Build/iOS (Simulator)")]
+    static void ExportProjectIosSimulator() => RunIosExport(iOSSdkVersion.SimulatorSDK);
+
+    /// <summary>
+    /// Shared body for the two iOS menu entries. Saves the current
+    /// PlayerSettings.iOS.sdkVersion, flips it to the requested target for
+    /// this export, then restores in a finally block so the persisted
+    /// project setting isn't surprise-mutated.
+    /// </summary>
+    static void RunIosExport(iOSSdkVersion sdk)
     {
-        // Using UNITY_IOS preprocessor because 'using UnityEditor.iOS.Xcode' is only available with iOS build tools
-        ProjectExportCheckerResult result = projectExportChecker.PreCheckIos();
 #if UNITY_IOS
-        if(result.IsSuccessful) {
-            new ProjectExporterIos().Export(result.BuildPlayerOptions, result.PrecheckWarnings);
+        iOSSdkVersion originalSdk = PlayerSettings.iOS.sdkVersion;
+        PlayerSettings.iOS.sdkVersion = sdk;
+        try
+        {
+            ProjectExportCheckerResult result = projectExportChecker.PreCheckIos();
+            if (result.IsSuccessful)
+            {
+                new ProjectExporterIos().Export(result.BuildPlayerOptions, result.PrecheckWarnings);
+            }
+        }
+        finally
+        {
+            PlayerSettings.iOS.sdkVersion = originalSdk;
         }
 #endif
     }
