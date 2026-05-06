@@ -1,5 +1,5 @@
-using System.Collections.Generic;
 using System.Reflection;
+using System.Text;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -9,186 +9,200 @@ namespace Flunity {
     /// by <see cref="FlunityBridgeBehaviour"/> alongside the registry + log
     /// streamer.
     ///
-    /// Exposes:
+    /// Returns hand-rolled JSON via <see cref="FlunityRawJson"/> rather than
+    /// `[System.Serializable]` types — Unity's JsonUtility caps recursion at
+    /// 10 levels (real scenes go deeper) and its layout cache breaks the
+    /// build when serialized class shapes change between Editor + player.
+    /// Manual JSON sidesteps both.
+    ///
+    /// Outlets:
     /// <list type="bullet">
-    ///   <item><c>Flunity.Scene.Tree()</c> — full scene graph as a tree of
-    ///   <see cref="SceneNode"/>.</item>
+    ///   <item><c>Flunity.Scene.Tree()</c> — flat list of nodes
+    ///   <c>{id, parentId, name, active, components[]}</c>. Clients
+    ///   rebuild the tree from parentId.</item>
     ///   <item><c>Flunity.Scene.Inspect({id})</c> — one GameObject's
     ///   components + their public fields + the outlets they expose.</item>
     /// </list>
-    ///
-    /// Used by the Flutter-side Inspector tab. Cheap to call — no per-frame
-    /// work, just on-demand reflection over <c>SceneManager</c>.
     /// </summary>
     [DisallowMultipleComponent]
     public class FlunitySceneInspector : MonoBehaviour {
 
         [FlunityOutlet("Flunity.Scene.Tree")]
-        public SceneTree Tree() {
-            // Flat list of nodes, parent referenced by id. Avoids
-            // JsonUtility's hard 10-level recursion cap (real scenes —
-            // anything with nested prefabs — go deeper). Flutter
-            // rebuilds the tree client-side from parentId.
-            var flat = new List<SceneNodeFlat>();
+        public FlunityRawJson Tree() {
+            var sb = new StringBuilder(4096);
+            sb.Append("{\"nodes\":[");
+            bool first = true;
+            // SceneManager.sceneCount covers every loaded scene including
+            // additive ones. We emit a synthetic root per scene so the
+            // Flutter tree view can group GameObjects by their owning
+            // scene — useful when MainController loads Forest additively
+            // on top of MainScene, etc.
             for (int i = 0; i < SceneManager.sceneCount; i++) {
                 var scene = SceneManager.GetSceneAt(i);
                 if (!scene.isLoaded) continue;
+                string sceneId = "scene:" + scene.name;
+                WriteSceneNodeJson(sb, scene.name, sceneId, ref first);
                 foreach (var go in scene.GetRootGameObjects()) {
-                    Walk(go, parentId: "", into: flat);
+                    WriteNodeJson(sb, go, parentId: sceneId, ref first);
                 }
             }
-            return new SceneTree { nodes = flat.ToArray() };
+            sb.Append("]}");
+            return new FlunityRawJson(sb.ToString());
         }
 
-        void Walk(GameObject go, string parentId, List<SceneNodeFlat> into) {
-            var componentNames = new List<string>();
+        void WriteSceneNodeJson(StringBuilder sb, string sceneName, string sceneId, ref bool first) {
+            if (!first) sb.Append(',');
+            first = false;
+            sb.Append('{')
+              .Append("\"id\":\"").Append(EscapeJson(sceneId)).Append('"')
+              .Append(",\"parentId\":\"\"")
+              .Append(",\"name\":\"").Append(EscapeJson(sceneName)).Append('"')
+              .Append(",\"active\":true")
+              .Append(",\"kind\":\"scene\"")
+              .Append(",\"components\":[]")
+              .Append('}');
+        }
+
+        void WriteNodeJson(StringBuilder sb, GameObject go, string parentId, ref bool first) {
+            if (!first) sb.Append(',');
+            first = false;
+            sb.Append('{')
+              .Append("\"id\":\"").Append(go.GetInstanceID()).Append('"')
+              .Append(",\"parentId\":\"").Append(EscapeJson(parentId)).Append('"')
+              .Append(",\"name\":\"").Append(EscapeJson(go.name)).Append('"')
+              .Append(",\"active\":").Append(go.activeInHierarchy ? "true" : "false")
+              .Append(",\"kind\":\"go\"")
+              .Append(",\"components\":[");
+            bool firstComp = true;
             foreach (var c in go.GetComponents<Component>()) {
-                if (c != null) componentNames.Add(c.GetType().Name);
+                if (c == null) continue;
+                if (!firstComp) sb.Append(',');
+                firstComp = false;
+                sb.Append('"').Append(EscapeJson(c.GetType().Name)).Append('"');
             }
-            into.Add(new SceneNodeFlat {
-                id = go.GetInstanceID().ToString(),
-                parentId = parentId,
-                name = go.name,
-                active = go.activeInHierarchy,
-                components = componentNames.ToArray()
-            });
+            sb.Append("]}");
             foreach (Transform child in go.transform) {
-                Walk(child.gameObject, go.GetInstanceID().ToString(), into);
+                WriteNodeJson(sb, child.gameObject, go.GetInstanceID().ToString(), ref first);
             }
         }
 
         [FlunityOutlet("Flunity.Scene.Inspect")]
-        public InspectResult Inspect(InspectArgs args) {
+        public FlunityRawJson Inspect(InspectArgs args) {
             if (args == null || string.IsNullOrEmpty(args.id)) {
-                return new InspectResult { found = false, error = "missing id" };
+                return ErrorJson("missing id");
             }
             if (!int.TryParse(args.id, out int instanceId)) {
-                return new InspectResult { found = false, error = "id must be an integer" };
+                return ErrorJson("id must be an integer");
             }
-
-            // Find the GameObject by InstanceID. Unity 6 deprecated
-            // `Resources.InstanceIDToObject(int)` in favour of
-            // `Resources.EntityIdToObject(EntityId)`. We iterate via
-            // FindObjectsOfTypeAll instead — runs once per inspect call,
-            // so the O(N) cost is fine, and it's portable across all
-            // Unity 6 patches without depending on the new EntityId type.
+            // Resolve InstanceID by iterating all loaded GameObjects. O(N)
+            // but fine — Inspect runs on demand from the inspector tab.
+            // Avoids `Resources.InstanceIDToObject` (deprecated in Unity 6).
             GameObject obj = null;
             foreach (var go in Resources.FindObjectsOfTypeAll<GameObject>()) {
                 if (go == null) continue;
-                if (!go.scene.IsValid()) continue; // skip prefabs in assets
+                if (!go.scene.IsValid()) continue;
                 if (go.GetInstanceID() == instanceId) {
                     obj = go;
                     break;
                 }
             }
             if (obj == null) {
-                return new InspectResult { found = false, error = "no GameObject with that InstanceID in any loaded scene" };
+                return ErrorJson("no GameObject with that InstanceID in any loaded scene");
             }
 
-            var components = new List<ComponentInfo>();
+            var sb = new StringBuilder(2048);
+            sb.Append("{\"found\":true")
+              .Append(",\"id\":\"").Append(obj.GetInstanceID()).Append('"')
+              .Append(",\"name\":\"").Append(EscapeJson(obj.name)).Append('"')
+              .Append(",\"path\":\"").Append(EscapeJson(ScenePathOf(obj))).Append('"')
+              .Append(",\"active\":").Append(obj.activeInHierarchy ? "true" : "false")
+              .Append(",\"components\":[");
+            bool firstComp = true;
             foreach (var c in obj.GetComponents<Component>()) {
                 if (c == null) continue;
-                var type = c.GetType();
-                var fields = new List<FieldEntry>();
-                foreach (var f in type.GetFields(BindingFlags.Public | BindingFlags.Instance)) {
-                    object val = null;
-                    try { val = f.GetValue(c); } catch { /* ignore unreadable */ }
-                    fields.Add(new FieldEntry {
-                        name = f.Name,
-                        type = f.FieldType.Name,
-                        value = ToDisplayString(val)
-                    });
-                }
-                var outlets = new List<string>();
-                foreach (var m in type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)) {
-                    var attr = m.GetCustomAttribute<FlunityOutletAttribute>();
-                    if (attr != null) outlets.Add(attr.Name ?? $"{type.Name}.{m.Name}");
-                }
-                components.Add(new ComponentInfo {
-                    type = type.Name,
-                    fields = fields.ToArray(),
-                    outlets = outlets.ToArray()
-                });
+                if (!firstComp) sb.Append(',');
+                firstComp = false;
+                WriteComponentJson(sb, c);
             }
+            sb.Append("]}");
+            return new FlunityRawJson(sb.ToString());
+        }
 
-            return new InspectResult {
-                found = true,
-                id = instanceId.ToString(),
-                name = obj.name,
-                path = ScenePathOf(obj),
-                active = obj.activeInHierarchy,
-                components = components.ToArray()
-            };
+        void WriteComponentJson(StringBuilder sb, Component c) {
+            var type = c.GetType();
+            sb.Append('{').Append("\"type\":\"").Append(EscapeJson(type.Name)).Append('"');
+            sb.Append(",\"fields\":[");
+            bool first = true;
+            foreach (var f in type.GetFields(BindingFlags.Public | BindingFlags.Instance)) {
+                if (!first) sb.Append(',');
+                first = false;
+                object val = null;
+                try { val = f.GetValue(c); } catch { /* ignore unreadable */ }
+                sb.Append('{')
+                  .Append("\"name\":\"").Append(EscapeJson(f.Name)).Append('"')
+                  .Append(",\"type\":\"").Append(EscapeJson(f.FieldType.Name)).Append('"')
+                  .Append(",\"value\":\"").Append(EscapeJson(ToDisplayString(val))).Append('"')
+                  .Append('}');
+            }
+            sb.Append("],\"outlets\":[");
+            bool firstOutlet = true;
+            foreach (var m in type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)) {
+                var attr = m.GetCustomAttribute<FlunityOutletAttribute>();
+                if (attr == null) continue;
+                if (!firstOutlet) sb.Append(',');
+                firstOutlet = false;
+                string outletName = attr.Name ?? $"{type.Name}.{m.Name}";
+                sb.Append('"').Append(EscapeJson(outletName)).Append('"');
+            }
+            sb.Append("]}");
         }
 
         // ---------- helpers ----------
 
+        FlunityRawJson ErrorJson(string message) {
+            var sb = new StringBuilder();
+            sb.Append("{\"found\":false,\"error\":\"").Append(EscapeJson(message)).Append("\"}");
+            return new FlunityRawJson(sb.ToString());
+        }
+
         static string ScenePathOf(GameObject go) {
-            var parts = new List<string>();
+            var sb = new StringBuilder();
             for (var t = go.transform; t != null; t = t.parent) {
-                parts.Add(t.name);
+                if (sb.Length > 0) sb.Insert(0, '/');
+                sb.Insert(0, t.name);
             }
-            parts.Reverse();
-            return string.Join("/", parts);
+            return sb.ToString();
         }
 
         static string ToDisplayString(object v) {
             if (v == null) return "null";
             if (v is string s) return s;
-            // Unity types' ToString() is usually adequate (e.g. Vector3 → "(0.0, 1.0, 0.0)").
             return v.ToString();
+        }
+
+        static string EscapeJson(string s) {
+            if (string.IsNullOrEmpty(s)) return "";
+            var sb = new StringBuilder(s.Length + 8);
+            foreach (var c in s) {
+                switch (c) {
+                    case '\\': sb.Append("\\\\"); break;
+                    case '"':  sb.Append("\\\""); break;
+                    case '\n': sb.Append("\\n"); break;
+                    case '\r': sb.Append("\\r"); break;
+                    case '\t': sb.Append("\\t"); break;
+                    default:
+                        if (c < 0x20) sb.AppendFormat("\\u{0:x4}", (int)c);
+                        else sb.Append(c);
+                        break;
+                }
+            }
+            return sb.ToString();
         }
     }
 
-    /// <summary>
-    /// Flat representation of the scene graph. Nodes know their parent
-    /// by id; clients (e.g. the Flutter Inspector) rebuild the tree
-    /// client-side. Avoids `JsonUtility.ToJson`'s hard 10-level recursion
-    /// cap which would silently fail on any non-trivial scene.
-    /// </summary>
-    [System.Serializable]
-    public class SceneTree {
-        public SceneNodeFlat[] nodes;
-    }
-
-    [System.Serializable]
-    public class SceneNodeFlat {
-        /// Unity InstanceID as string. Pass to Flunity.Scene.Inspect.
-        public string id;
-        /// Parent's id, or empty string for scene-root GameObjects.
-        public string parentId;
-        public string name;
-        public bool active;
-        public string[] components;
-    }
-
+    /// <summary>Args for <see cref="FlunitySceneInspector.Inspect"/>.</summary>
     [System.Serializable]
     public class InspectArgs {
         public string id;
-    }
-
-    [System.Serializable]
-    public class InspectResult {
-        public bool found;
-        public string id;
-        public string name;
-        public string path;
-        public bool active;
-        public ComponentInfo[] components;
-        public string error;
-    }
-
-    [System.Serializable]
-    public class ComponentInfo {
-        public string type;
-        public FieldEntry[] fields;
-        public string[] outlets;
-    }
-
-    [System.Serializable]
-    public class FieldEntry {
-        public string name;
-        public string type;
-        public string value;
     }
 }

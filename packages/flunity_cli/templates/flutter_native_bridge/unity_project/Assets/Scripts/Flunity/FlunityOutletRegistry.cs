@@ -348,6 +348,11 @@ namespace Flunity {
 
         static string SerializeReturn(object value) {
             if (value == null) return "null";
+            // FlunityRawJson is the escape hatch for outlets that need
+            // dynamic / deeply-nested return shapes that JsonUtility's
+            // [Serializable] reflection can't handle cleanly. The wrapper's
+            // string is already JSON; insert verbatim.
+            if (value is FlunityRawJson raw) return raw.json;
             if (value is string s) return "\"" + EscapeJson(s) + "\"";
             if (value is bool b) return b ? "true" : "false";
             if (value is int || value is long || value is float || value is double ||
@@ -355,6 +360,9 @@ namespace Flunity {
                 return Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture);
             }
             // Complex types: rely on Unity's JsonUtility (requires [Serializable]).
+            // Hits a 10-level recursion cap and a layout cache that bites
+            // when the shape changes — return FlunityRawJson from the
+            // outlet to bypass both.
             try { return JsonUtility.ToJson(value); }
             catch { return "null"; }
         }
