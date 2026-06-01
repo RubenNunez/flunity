@@ -83,7 +83,7 @@ flutter run -d <device-id>      # `flutter devices` lists them
 
 Two patterns:
 
-- **Outlets** — typed Flutter→Unity invocation (recommended for new code). Decorate a C# method with `[FlunityOutlet]`, call it from Dart with `await flunity.invoke<T>('Class.Method', args:)`. Currently iOS / Android only — WebGL outlet support is on the roadmap. See [outlets.md](outlets.md).
+- **Outlets** — typed Flutter→Unity invocation (recommended for new code). Decorate a C# method with `[FlunityOutlet]`, call it from Dart with `await flunity.invoke<T>('Class.Method', args:)`. Works on iOS, Android, and WebGL — the same typed API on every target. See [outlets.md](outlets.md).
 - **Manual messages** — `FlunityBridge.OnMessage` event + `FlunityBridge.SendRaw` for stream-style or multi-receiver use. Works on every transport. See [bridge-api.md](bridge-api.md).
 
 ## 7. What's next?
