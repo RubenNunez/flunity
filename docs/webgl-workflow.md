@@ -9,6 +9,8 @@ Flunity supports two modes for loading the Unity WebGL build into Flutter:
 
 Switch between them via `--dart-define=FLUNITY_MODE=dev` (default: `bundled`). The generated `unity_webgl_config.dart` reads this define and resolves the right `FlunityWebGLConfig`.
 
+Outlets (`flunity.invoke` / `flunity.find`) work inside WebGL views too — mounting the view registers the bridge automatically.
+
 ## Dev loop (rapid iteration)
 
 ```bash

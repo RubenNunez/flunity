@@ -2,7 +2,7 @@
 
 Outlets replace the manual `FlunityBridge.OnMessage` switch-statement dispatch with a declarative attribute pattern. You decorate a C# method with `[FlunityOutlet]` and call it from Dart with `await flunity.invoke('<Class>.<Method>', args: {...})`.
 
-**Status: native iOS / Android only in v1.** WebGL invoker support lands in Plan L.
+**Status: works on iOS, Android, and WebGL.** Outlets are transport-agnostic — the same `flunity.invoke` / `flunity.find` API runs on all three targets.
 
 > **Tip:** while developing, the in-app Inspector tab (jellx ships an example, ~300 lines, reusable) lets you call any outlet from a typed terminal: `call Class.Method` / `find Component` / `tree`. Catches typos and missing instances in seconds. See [debugging.md](debugging.md).
 
@@ -150,7 +150,7 @@ Unity uses `Resources.FindObjectsOfTypeAll<T>()` filtered to scene-loaded object
 | No matching outlet | `FlunityOutletException("no such outlet 'Foo.Bar'")` | Typo or method missing the attribute. |
 | Multiple matches without `target:` | `FlunityOutletException("X.Y is ambiguous: N instances; pass target:")` | Use `[FlunityIdentity]` or `find` first. |
 | No reply within timeout | `FlunityOutletTimeoutException` | Increase per-call timeout, or check Unity console for an exception. |
-| WebGL / desktop / web | `FlunityNotAttachedException` | v1 is iOS / Android only. |
+| No Unity view mounted | `FlunityNotAttachedException` | On WebGL, mount a `FlunityWebGLView` / `UnitySceneRoute` before calling outlets. On desktop (no Unity), outlets are unavailable. |
 
 ## Limitations to know about
 

@@ -18,7 +18,12 @@
 - `OutletCall` / `OutletReply` / `OutletFind` / `OutletFindReply` message types.
 - `FlunityInvoker` singleton (`flunity`): `invoke<T>(name, {target, args, timeout})`, `find(componentName)`, `FlunityComponentHandle.invoke(method, args:)`.
 - `FlunityOutletException`, `FlunityOutletTimeoutException`, `FlunityNotAttachedException`.
-- iOS / Android only; WebGL outlet support is Plan L.
+
+### Plan L — WebGL outlets
+
+- Outlet invoker now routes over an attachable `MessageTransport` (`attachWebTransport` / `detachWebTransport`) instead of being native-only.
+- `FlunityWebGLController` auto-registers its transport with the global `flunity` invoker on start and deregisters it on dispose, so `flunity.invoke` / `flunity.find` work on WebGL with no extra setup.
+- `FlunityNotAttachedException` message updated to the new "mount a view" guidance.
 
 ### Logs + scene inspection
 

@@ -11,6 +11,7 @@ For per-commit detail, see `git log`. For per-package additions, see `packages/f
 - **Plan A–D** — workspace, CLI, templates, real-world fixes. WebGL flow shipped end-to-end.
 - **Plan F** — `target: webgl|ios|android`. One Unity project, three artifacts. Vendored `flutter_embed_unity` v2.0.0 (MIT). `flunity build`, `flunity bundle`, target-conditional doctor. Templates: `flutter_native_basic`, `flutter_native_bridge`. Tooling: Flutter 3.38, Dart 3.10, Unity 6, iOS 14, NDK 27.
 - **Plan K** — outlets. `[FlunityOutlet]` / `[FlunityIdentity]` C# attributes; `flunity.invoke<T>` and `flunity.find` on the Dart side. `Flunity.Scene.Tree` / `Flunity.Scene.Inspect` system outlets for live scene introspection.
+- **Plan L** — WebGL outlets. `flunity.invoke<T>` and `flunity.find` now run over the WebGL `MessageTransport`, reaching parity with native. `FlunityWebGLController` auto-registers its transport with the global `flunity` invoker, so mounting a WebGL view makes outlets live with no extra setup. C# and the JSON wire format were already transport-agnostic — the change was Dart-side only.
 
 ### Cross-cutting tooling
 
