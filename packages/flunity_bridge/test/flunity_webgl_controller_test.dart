@@ -5,11 +5,15 @@ import 'package:flunity_bridge/src/flunity_webgl_controller.dart';
 import 'package:flunity_bridge/src/messages/built_in.dart';
 import 'package:flunity_bridge/src/messages/ping.dart';
 import 'package:flunity_bridge/src/messages/pong.dart';
+import 'package:flunity_bridge/src/outlets/flunity_invoker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'transport/fake_transport.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   setUp(registerBuiltInMessages);
 
   test('send() before ready queues, then flushes once ready', () async {
@@ -86,5 +90,44 @@ void main() {
     final done = controller.messages.toList();
     await controller.dispose();
     expect(await done, isEmpty);
+  });
+
+  group('outlet auto-registration', () {
+    test('constructing the controller attaches its transport to the invoker',
+        () async {
+      final invoker = FlunityInvoker.forTest();
+      final fake = FakeMessageTransport();
+      FlunityWebGLController(transport: fake, invoker: invoker);
+
+      final future = invoker.invoke<int>('Counter.Get');
+      await Future<void>.delayed(Duration.zero);
+
+      final payload = ((jsonDecode(fake.sentMessages.single)
+              as Map<String, Object?>)['payload'] as Map)
+          .cast<String, Object?>();
+      fake.pushFromUnity(jsonEncode({
+        'type': 'outlet_reply',
+        'payload': {'nonce': payload['nonce'], 'ok': true, 'value': 7},
+      }));
+
+      expect(await future, 7);
+    });
+
+    test('disposing the controller detaches its transport from the invoker',
+        () async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+      addTearDown(() => debugDefaultTargetPlatformOverride = null);
+
+      final invoker = FlunityInvoker.forTest();
+      final fake = FakeMessageTransport();
+      final controller =
+          FlunityWebGLController(transport: fake, invoker: invoker);
+      await controller.dispose();
+
+      await expectLater(
+        invoker.invoke<void>('Counter.Get'),
+        throwsA(isA<FlunityNotAttachedException>()),
+      );
+    });
   });
 }
