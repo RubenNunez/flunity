@@ -18,7 +18,10 @@ void main() {
 
   test('send() before ready queues, then flushes once ready', () async {
     final transport = FakeMessageTransport(startReady: false);
-    final controller = FlunityWebGLController(transport: transport);
+    final controller = FlunityWebGLController(
+      transport: transport,
+      invoker: FlunityInvoker.forTest(),
+    );
 
     final pending = controller.send(const Ping(nonce: 'q'));
     expect(transport.sentMessages, isEmpty);
@@ -35,7 +38,10 @@ void main() {
 
   test('messages stream emits typed FlunityMessage values', () async {
     final transport = FakeMessageTransport();
-    final controller = FlunityWebGLController(transport: transport);
+    final controller = FlunityWebGLController(
+      transport: transport,
+      invoker: FlunityInvoker.forTest(),
+    );
 
     final received = <FlunityMessage>[];
     final sub = controller.messages.listen(received.add);
@@ -53,7 +59,10 @@ void main() {
 
   test('messages stream surfaces malformed JSON via onError handler', () async {
     final transport = FakeMessageTransport();
-    final controller = FlunityWebGLController(transport: transport);
+    final controller = FlunityWebGLController(
+      transport: transport,
+      invoker: FlunityInvoker.forTest(),
+    );
 
     final errors = <Object>[];
     final sub = controller.messages.listen((_) {}, onError: errors.add);
@@ -68,7 +77,10 @@ void main() {
 
   test('isReady reflects underlying transport readiness', () async {
     final transport = FakeMessageTransport(startReady: false);
-    final controller = FlunityWebGLController(transport: transport);
+    final controller = FlunityWebGLController(
+      transport: transport,
+      invoker: FlunityInvoker.forTest(),
+    );
 
     expect(controller.isReady, isFalse);
     transport.markReady();
@@ -78,14 +90,20 @@ void main() {
 
   test('reload delegates to transport', () async {
     final transport = FakeMessageTransport();
-    final controller = FlunityWebGLController(transport: transport);
+    final controller = FlunityWebGLController(
+      transport: transport,
+      invoker: FlunityInvoker.forTest(),
+    );
     await controller.reload();
     expect(transport.reloadCount, 1);
   });
 
   test('dispose closes the messages stream', () async {
     final transport = FakeMessageTransport();
-    final controller = FlunityWebGLController(transport: transport);
+    final controller = FlunityWebGLController(
+      transport: transport,
+      invoker: FlunityInvoker.forTest(),
+    );
 
     final done = controller.messages.toList();
     await controller.dispose();
