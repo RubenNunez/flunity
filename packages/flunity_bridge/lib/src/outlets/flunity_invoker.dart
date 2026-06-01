@@ -32,14 +32,16 @@ class FlunityOutletTimeoutException implements Exception {
       'FlunityOutletTimeoutException: $name did not reply within $timeout';
 }
 
-/// Thrown when [FlunityInvoker] is used on a platform without a native Unity
-/// transport mounted. v1 supports iOS / Android only; WebGL invoker support
-/// is tracked in Plan L.
+/// Thrown when [FlunityInvoker] is used with no Unity transport available:
+/// on WebGL before a [FlunityWebGLController] (view) is mounted, or on an
+/// unsupported platform (desktop / web without Unity).
 class FlunityNotAttachedException implements Exception {
   @override
   String toString() =>
-      'FlunityNotAttachedException: outlets require a native Unity bridge '
-      '(iOS / Android). On WebGL, use FlunityWebGLController directly for now.';
+      'FlunityNotAttachedException: no Unity bridge is attached. On WebGL, '
+      'mount a FlunityWebGLView (or UnitySceneRoute) before calling outlets; '
+      'on iOS / Android the native bridge attaches automatically. Outlets are '
+      'unavailable on desktop / web targets without a Unity view.';
 }
 
 /// Reference to a Unity MonoBehaviour instance returned by [FlunityInvoker.find].
