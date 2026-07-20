@@ -55,16 +55,28 @@ class BundleCommand extends Command<int> {
   }
 
   Future<int> _bundleWebGL(FlunityProject project) async {
-    await prepareWebGLBuild(
-      buildDir: project.buildDir,
-      shimSourcePath: p.join(
-        project.paths.unityProject,
-        'Assets',
-        'Plugins',
-        'WebGL',
-        'flunity_bridge.js',
-      ),
-    );
+    final indexHtml = File(p.join(project.buildDir, 'index.html'));
+    if (!indexHtml.existsSync()) {
+      _logger.err(
+        'No Unity WebGL build at ${indexHtml.path} — build WebGL first.',
+      );
+      return 1;
+    }
+    try {
+      await prepareWebGLBuild(
+        buildDir: project.buildDir,
+        shimSourcePath: p.join(
+          project.paths.unityProject,
+          'Assets',
+          'Plugins',
+          'WebGL',
+          'flunity_bridge.js',
+        ),
+      );
+    } on PrepareWebGLException catch (e) {
+      _logger.err(e.message);
+      return 1;
+    }
     try {
       final summary = await copyWebGLBuild(project: project, clean: false);
       _logger

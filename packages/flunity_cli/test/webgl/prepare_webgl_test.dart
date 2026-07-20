@@ -57,4 +57,17 @@ void main() {
     expect(r2.shimCopied, isFalse);
     expect(r2.indexHtmlPatched, isFalse);
   });
+
+  test('throws when build directory is missing', () async {
+    final shim = File(p.join(tmp.path, 'flunity_bridge.js'))
+      ..writeAsStringSync('// shim');
+
+    expect(
+      () => prepareWebGLBuild(
+        buildDir: p.join(tmp.path, 'missing'),
+        shimSourcePath: shim.path,
+      ),
+      throwsA(isA<PrepareWebGLException>()),
+    );
+  });
 }

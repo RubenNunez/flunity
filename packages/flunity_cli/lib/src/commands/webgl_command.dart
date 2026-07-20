@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:args/command_runner.dart';
 import 'package:flunity_cli/src/manifest/flunity_project.dart';
 import 'package:flunity_cli/src/manifest/manifest_finder.dart';
+import 'package:flunity_cli/src/utils/path_safety.dart';
 import 'package:flunity_cli/src/webgl/dev_server.dart';
 import 'package:flunity_cli/src/webgl/prepare_webgl.dart';
 import 'package:flunity_cli/src/webgl/webgl_copy.dart';
@@ -65,10 +66,15 @@ class _ServeSubcommand extends Command<int> {
       'WebGL',
       'flunity_bridge.js',
     );
-    await prepareWebGLBuild(
-      buildDir: project.buildDir,
-      shimSourcePath: shimSourcePath,
-    );
+    try {
+      await prepareWebGLBuild(
+        buildDir: project.buildDir,
+        shimSourcePath: shimSourcePath,
+      );
+    } on PrepareWebGLException catch (e) {
+      _logger.err(e.message);
+      return 1;
+    }
 
     final server = await UnityDevServer.start(
       rootDir: project.buildDir,
@@ -127,16 +133,28 @@ class _CopySubcommand extends Command<int> {
   Future<int> run() async {
     final project = _loadProjectOrDie(_logger);
     if (project == null) return 64;
-    await prepareWebGLBuild(
-      buildDir: project.buildDir,
-      shimSourcePath: p.join(
-        project.paths.unityProject,
-        'Assets',
-        'Plugins',
-        'WebGL',
-        'flunity_bridge.js',
-      ),
-    );
+    final indexHtml = File(p.join(project.buildDir, 'index.html'));
+    if (!indexHtml.existsSync()) {
+      _logger.err(
+        'No Unity WebGL build at ${indexHtml.path} — build WebGL first.',
+      );
+      return 1;
+    }
+    try {
+      await prepareWebGLBuild(
+        buildDir: project.buildDir,
+        shimSourcePath: p.join(
+          project.paths.unityProject,
+          'Assets',
+          'Plugins',
+          'WebGL',
+          'flunity_bridge.js',
+        ),
+      );
+    } on PrepareWebGLException catch (e) {
+      _logger.err(e.message);
+      return 1;
+    }
     try {
       final summary = await copyWebGLBuild(
         project: project,
@@ -169,6 +187,21 @@ class _CleanSubcommand extends Command<int> {
     final project = _loadProjectOrDie(_logger);
     if (project == null) return 64;
     final destination = Directory(project.paths.flutterAssets);
+    try {
+      assertSafeRecursiveDelete(
+        targetPath: destination.path,
+        allowedParent: project.rootDir,
+        operation: 'clean WebGL Flutter asset output',
+      );
+      assertSafeRecursiveDelete(
+        targetPath: destination.path,
+        allowedParent: project.paths.flutterApp,
+        operation: 'clean WebGL Flutter asset output',
+      );
+    } on PathSafetyException catch (e) {
+      _logger.err(e.message);
+      return 64;
+    }
     if (!destination.existsSync()) {
       _logger.info('Already clean: ${destination.path}');
       return 0;
@@ -196,16 +229,29 @@ class _PrepareSubcommand extends Command<int> {
   Future<int> run() async {
     final project = _loadProjectOrDie(_logger);
     if (project == null) return 64;
-    final summary = await prepareWebGLBuild(
-      buildDir: project.buildDir,
-      shimSourcePath: p.join(
-        project.paths.unityProject,
-        'Assets',
-        'Plugins',
-        'WebGL',
-        'flunity_bridge.js',
-      ),
-    );
+    final indexHtml = File(p.join(project.buildDir, 'index.html'));
+    if (!indexHtml.existsSync()) {
+      _logger.err(
+        'No Unity WebGL build at ${indexHtml.path} — build WebGL first.',
+      );
+      return 1;
+    }
+    final PrepareSummary summary;
+    try {
+      summary = await prepareWebGLBuild(
+        buildDir: project.buildDir,
+        shimSourcePath: p.join(
+          project.paths.unityProject,
+          'Assets',
+          'Plugins',
+          'WebGL',
+          'flunity_bridge.js',
+        ),
+      );
+    } on PrepareWebGLException catch (e) {
+      _logger.err(e.message);
+      return 1;
+    }
     if (summary.shimCopied) {
       _logger.info('Copied flunity_bridge.js into build dir');
     }

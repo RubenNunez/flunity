@@ -90,13 +90,26 @@ namespace Flunity {
             if (idx < 0) return null;
             int colon = json.IndexOf(':', idx + key.Length);
             if (colon < 0) return null;
-            int braceStart = json.IndexOf('{', colon);
-            if (braceStart < 0) return null;
+            int braceStart = colon + 1;
+            while (braceStart < json.Length && char.IsWhiteSpace(json[braceStart])) braceStart++;
+            if (braceStart >= json.Length || json[braceStart] != '{') return null;
             int depth = 0;
+            bool inString = false;
+            bool escaped = false;
             for (int i = braceStart; i < json.Length; i++) {
                 char c = json[i];
+                if (inString) {
+                    if (escaped) escaped = false;
+                    else if (c == '\\') escaped = true;
+                    else if (c == '"') inString = false;
+                    continue;
+                }
+                if (c == '"') { inString = true; continue; }
                 if (c == '{') depth++;
-                else if (c == '}') { depth--; if (depth == 0) return json.Substring(braceStart, i - braceStart + 1); }
+                else if (c == '}') {
+                    depth--;
+                    if (depth == 0) return json.Substring(braceStart, i - braceStart + 1);
+                }
             }
             return null;
         }

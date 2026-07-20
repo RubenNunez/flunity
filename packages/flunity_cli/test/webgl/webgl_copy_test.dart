@@ -78,4 +78,24 @@ void main() {
       throwsA(isA<WebGLCopyException>()),
     );
   });
+
+  test('rejects flutter_assets outside flutter_app', () async {
+    File(p.join(tmp.path, 'flunity.yaml')).writeAsStringSync('''
+name: x
+target: webgl
+paths:
+  flutter_assets: ../outside_assets
+''');
+    final buildDir = Directory(p.join(tmp.path, 'unity_project/Builds/webgl'))
+      ..createSync(recursive: true);
+    File(p.join(buildDir.path, 'index.html')).writeAsStringSync('<html/>');
+
+    final project = FlunityProject.loadFromManifest(
+      p.join(tmp.path, 'flunity.yaml'),
+    );
+    expect(
+      () => copyWebGLBuild(project: project),
+      throwsA(isA<WebGLCopyException>()),
+    );
+  });
 }

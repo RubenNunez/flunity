@@ -36,13 +36,18 @@ Two system outlets, also auto-attached, expose Unity's scene to Flutter:
 
 | Outlet | Returns |
 | --- | --- |
-| `Flunity.Scene.Tree()` | Full scene-graph as a tree of `{id, name, active, components[], children[]}` nodes. |
+| `Flunity.Scene.Tree()` | Loaded scene roots plus their top-level GameObjects as flat `{nodes: [...]}`. GameObject nodes include `{id, parentId, name, active, kind, childCount, components[]}`. |
+| `Flunity.Scene.Children({parentId})` | Direct child GameObjects for one expanded parent node, also as `{nodes: [...]}`. |
 | `Flunity.Scene.Inspect({id})` | One GameObject's components + their public fields + the outlets each component exposes. |
 
 Call them like any other outlet:
 
 ```dart
 final tree = await flunity.invoke<Map<String, Object?>>('Flunity.Scene.Tree');
+final children = await flunity.invoke<Map<String, Object?>>(
+  'Flunity.Scene.Children',
+  args: {'parentId': '12345'},
+);
 final info = await flunity.invoke<Map<String, Object?>>(
   'Flunity.Scene.Inspect',
   args: {'id': '12345'},

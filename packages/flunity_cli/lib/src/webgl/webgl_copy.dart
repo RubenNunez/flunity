@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:crypto/crypto.dart';
 import 'package:flunity_cli/src/manifest/flunity_project.dart';
+import 'package:flunity_cli/src/utils/path_safety.dart';
 import 'package:path/path.dart' as p;
 
 class WebGLCopyException implements Exception {
@@ -29,6 +30,21 @@ Future<WebGLCopySummary> copyWebGLBuild({
   required FlunityProject project,
   bool clean = false,
 }) async {
+  try {
+    assertPathInside(
+      targetPath: project.paths.flutterAssets,
+      allowedParent: project.rootDir,
+      operation: 'write WebGL Flutter assets',
+    );
+    assertPathInside(
+      targetPath: project.paths.flutterAssets,
+      allowedParent: project.paths.flutterApp,
+      operation: 'write WebGL Flutter assets',
+    );
+  } on PathSafetyException catch (e) {
+    throw WebGLCopyException(e.message);
+  }
+
   final src = Directory(project.buildDir);
   if (!src.existsSync() || !File(p.join(src.path, 'index.html')).existsSync()) {
     throw WebGLCopyException(

@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flunity_cli/src/manifest/flunity_project.dart';
+import 'package:flunity_cli/src/utils/path_safety.dart';
 import 'package:path/path.dart' as p;
 
 /// Result of a native bundle operation: where the artifact landed and how
@@ -61,6 +62,20 @@ Future<BundleSummary> bundleIos({required FlunityProject project}) async {
   // the framework into Xcode without leaking Unity's intermediate files
   // into Runner/.
   final destDir = Directory(p.join(destination.path, 'UnityExport'));
+  try {
+    assertSafeRecursiveDelete(
+      targetPath: destDir.path,
+      allowedParent: project.rootDir,
+      operation: 'replace iOS Unity export',
+    );
+    assertSafeRecursiveDelete(
+      targetPath: destDir.path,
+      allowedParent: destination.path,
+      operation: 'replace iOS Unity export',
+    );
+  } on PathSafetyException catch (e) {
+    throw BundleException(e.message);
+  }
   if (destDir.existsSync()) {
     destDir.deleteSync(recursive: true);
   }
@@ -102,6 +117,20 @@ Future<BundleSummary> bundleAndroid({required FlunityProject project}) async {
   }
 
   final dest = Directory(p.join(androidDir.path, 'unityLibrary'));
+  try {
+    assertSafeRecursiveDelete(
+      targetPath: dest.path,
+      allowedParent: project.rootDir,
+      operation: 'replace Android unityLibrary',
+    );
+    assertSafeRecursiveDelete(
+      targetPath: dest.path,
+      allowedParent: androidDir.path,
+      operation: 'replace Android unityLibrary',
+    );
+  } on PathSafetyException catch (e) {
+    throw BundleException(e.message);
+  }
   if (dest.existsSync()) {
     dest.deleteSync(recursive: true);
   }

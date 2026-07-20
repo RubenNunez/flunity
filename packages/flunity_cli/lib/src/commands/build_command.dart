@@ -4,6 +4,7 @@ import 'package:args/command_runner.dart';
 import 'package:flunity_cli/src/manifest/flunity_project.dart';
 import 'package:flunity_cli/src/manifest/manifest_finder.dart';
 import 'package:flunity_cli/src/unity/unity_locator.dart';
+import 'package:flunity_cli/src/utils/path_safety.dart';
 import 'package:flunity_cli/src/utils/process_runner.dart';
 import 'package:mason_logger/mason_logger.dart';
 
@@ -68,6 +69,17 @@ class BuildCommand extends Command<int> {
           '/path/to/Unity.app/Contents/MacOS/Unity.',
         );
       return 70;
+    }
+
+    try {
+      assertSafeRecursiveDelete(
+        targetPath: project.buildDir,
+        allowedParent: project.rootDir,
+        operation: 'clean Unity build output',
+      );
+    } on PathSafetyException catch (e) {
+      _logger.err(e.message);
+      return 64;
     }
 
     final exportDir = Directory(project.buildDir);

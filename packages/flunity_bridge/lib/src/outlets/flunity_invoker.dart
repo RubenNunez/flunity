@@ -143,7 +143,16 @@ class FlunityInvoker {
       args: args,
     );
     flunityLogs.log(_formatOutletCall(call), level: FlunityLogLevel.info);
-    await _sendEnvelope(call);
+    try {
+      await _sendEnvelope(call);
+    } catch (e) {
+      _pending.remove(nonce)?.timer.cancel();
+      flunityLogs.log(
+        '← outlet_call $name (nonce $nonce) send failed: $e',
+        level: FlunityLogLevel.error,
+      );
+      rethrow;
+    }
 
     try {
       final result = await completer.future;
@@ -209,7 +218,16 @@ class FlunityInvoker {
       '← outlet_find $componentName (nonce $nonce)',
       level: FlunityLogLevel.info,
     );
-    await _sendEnvelope(find);
+    try {
+      await _sendEnvelope(find);
+    } catch (e) {
+      _pending.remove(nonce)?.timer.cancel();
+      flunityLogs.log(
+        '← outlet_find $componentName (nonce $nonce) send failed: $e',
+        level: FlunityLogLevel.error,
+      );
+      rethrow;
+    }
 
     final raw = await completer.future;
     if (raw is List<FlunityComponentRef>) {

@@ -9,6 +9,13 @@ class PrepareSummary {
   final bool indexHtmlPatched;
 }
 
+class PrepareWebGLException implements Exception {
+  PrepareWebGLException(this.message);
+  final String message;
+  @override
+  String toString() => 'PrepareWebGLException: $message';
+}
+
 /// Prepares a Unity WebGL build directory for the Flunity bridge by:
 ///
 ///   1. Copying `flunity_bridge.js` from the project's
@@ -22,6 +29,12 @@ Future<PrepareSummary> prepareWebGLBuild({
   required String buildDir,
   required String shimSourcePath,
 }) async {
+  if (!Directory(buildDir).existsSync()) {
+    throw PrepareWebGLException(
+      'No Unity WebGL build directory at $buildDir. Build WebGL first.',
+    );
+  }
+
   var shimCopied = false;
   var patched = false;
 

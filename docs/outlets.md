@@ -156,7 +156,7 @@ Unity uses `Resources.FindObjectsOfTypeAll<T>()` filtered to scene-loaded object
 
 - **Method shape**: zero or one parameter. The single parameter must be a `[Serializable]` C# class — primitives directly aren't supported (use `class FeedArgs { public int amount; }` rather than `void Feed(int amount)`). The arg field names must match the Dart `args:` map keys.
 - **Public methods only.** Private / protected methods aren't picked up.
-- **One outlet per name** — registry rejects duplicate static outlets at scan time.
+- **One outlet per name** — registry rejects duplicate static or instance outlet names at scan time.
 - **Coroutines** (`IEnumerator` returns) aren't supported in v1. Use `async Task` instead.
 - **Scene transitions**: the registry rescans on Awake, so newly-loaded scenes contribute outlets the next time the registry's GameObject's Awake fires. Since `FlunityBridgeBehaviour` is `DontDestroyOnLoad`, the registry survives — re-scanning happens via `Resources.FindObjectsOfTypeAll` at lookup time, so newly added scene MonoBehaviours are found without an explicit rescan.
 

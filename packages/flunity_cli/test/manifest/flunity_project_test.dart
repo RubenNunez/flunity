@@ -49,12 +49,18 @@ bridge:
     expect(project.isNative, isFalse);
     expect(project.paths.flutterApp, p.join(tmp.path, 'flutter_app'));
     expect(project.paths.unityProject, p.join(tmp.path, 'unity_project'));
-    expect(project.paths.unityBuilds, p.join(tmp.path, 'unity_project/Builds'));
-    expect(project.buildDir, p.join(tmp.path, 'unity_project/Builds/webgl'));
+    expect(
+      project.paths.unityBuilds,
+      p.join(tmp.path, 'unity_project', 'Builds'),
+    );
+    expect(
+      project.buildDir,
+      p.join(tmp.path, 'unity_project', 'Builds', 'webgl'),
+    );
     expect(project.paths.unityBuildOverride, isNull);
     expect(
       project.paths.flutterAssets,
-      p.join(tmp.path, 'flutter_app/assets/unity_webgl'),
+      p.join(tmp.path, 'flutter_app', 'assets', 'unity_webgl'),
     );
     expect(project.webgl.devServer.host, '127.0.0.1');
     expect(project.webgl.devServer.port, 8080);
@@ -73,7 +79,10 @@ target: ios
     expect(project.isIos, isTrue);
     expect(project.isNative, isTrue);
     expect(project.isWebGL, isFalse);
-    expect(project.buildDir, p.join(tmp.path, 'unity_project/Builds/ios'));
+    expect(
+      project.buildDir,
+      p.join(tmp.path, 'unity_project', 'Builds', 'ios'),
+    );
   });
 
   test('parses target: android', () {
@@ -87,7 +96,10 @@ target: android
     expect(project.target, FlunityTarget.android);
     expect(project.isAndroid, isTrue);
     expect(project.isNative, isTrue);
-    expect(project.buildDir, p.join(tmp.path, 'unity_project/Builds/android'));
+    expect(
+      project.buildDir,
+      p.join(tmp.path, 'unity_project', 'Builds', 'android'),
+    );
   });
 
   test('applies sensible defaults to a minimal manifest', () {
@@ -102,8 +114,14 @@ target: webgl
 
     expect(project.paths.flutterApp, p.join(tmp.path, 'flutter_app'));
     expect(project.paths.unityProject, p.join(tmp.path, 'unity_project'));
-    expect(project.paths.unityBuilds, p.join(tmp.path, 'unity_project/Builds'));
-    expect(project.buildDir, p.join(tmp.path, 'unity_project/Builds/webgl'));
+    expect(
+      project.paths.unityBuilds,
+      p.join(tmp.path, 'unity_project', 'Builds'),
+    );
+    expect(
+      project.buildDir,
+      p.join(tmp.path, 'unity_project', 'Builds', 'webgl'),
+    );
     expect(project.webgl.devServer.host, '127.0.0.1');
     expect(project.webgl.devServer.port, 8080);
     expect(project.bridge.enabled, true);
@@ -123,10 +141,13 @@ paths:
       );
       expect(
         project.paths.unityBuildOverride,
-        p.join(tmp.path, 'unity_project/Builds/WebGL'),
+        p.join(tmp.path, 'unity_project', 'Builds', 'WebGL'),
       );
       // buildDir returns the override, not the per-target derivation.
-      expect(project.buildDir, p.join(tmp.path, 'unity_project/Builds/WebGL'));
+      expect(
+        project.buildDir,
+        p.join(tmp.path, 'unity_project', 'Builds', 'WebGL'),
+      );
     },
   );
 
