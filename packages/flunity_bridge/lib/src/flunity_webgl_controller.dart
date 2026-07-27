@@ -2,13 +2,18 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flunity_bridge/src/flunity_message.dart';
+import 'package:flunity_bridge/src/outlets/flunity_invoker.dart';
 import 'package:flunity_bridge/src/transport/message_transport.dart';
 
 /// High-level Flutter-side controller. Wraps a [MessageTransport] and
 /// exposes typed [FlunityMessage] streams + send.
 class FlunityWebGLController {
-  FlunityWebGLController({required MessageTransport transport})
-    : _transport = transport {
+  FlunityWebGLController({
+    required MessageTransport transport,
+    FlunityInvoker? invoker,
+  }) : _transport = transport,
+       _invoker = invoker ?? flunity {
+    _invoker.attachWebTransport(transport);
     _transport.ready.then((_) {
       _isReady = true;
     });
@@ -19,6 +24,7 @@ class FlunityWebGLController {
   }
 
   final MessageTransport _transport;
+  final FlunityInvoker _invoker;
   final StreamController<FlunityMessage> _messages =
       StreamController<FlunityMessage>.broadcast();
   late final StreamSubscription<String> _incomingSub;
@@ -43,6 +49,7 @@ class FlunityWebGLController {
   Future<void> dispose() async {
     if (_disposed) return;
     _disposed = true;
+    _invoker.detachWebTransport(_transport);
     await _incomingSub.cancel();
     await _transport.dispose();
     await _messages.close();

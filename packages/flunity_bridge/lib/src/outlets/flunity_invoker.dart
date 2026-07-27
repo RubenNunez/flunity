@@ -9,6 +9,7 @@ import 'package:flunity_bridge/src/messages/outlet_find_reply.dart';
 import 'package:flunity_bridge/src/messages/outlet_reply.dart';
 import 'package:flunity_bridge/src/native/native_api.dart' as native;
 import 'package:flunity_bridge/src/native/unity_message_listeners.dart';
+import 'package:flunity_bridge/src/transport/message_transport.dart';
 import 'package:flutter/foundation.dart';
 
 /// Thrown when an outlet call fails on the Unity side. [unityMessage] is the
@@ -31,14 +32,16 @@ class FlunityOutletTimeoutException implements Exception {
       'FlunityOutletTimeoutException: $name did not reply within $timeout';
 }
 
-/// Thrown when [FlunityInvoker] is used on a platform without a native Unity
-/// transport mounted. v1 supports iOS / Android only; WebGL invoker support
-/// is tracked in Plan L.
+/// Thrown when [FlunityInvoker] is used with no Unity transport available:
+/// on WebGL before a [FlunityWebGLController] (view) is mounted, or on an
+/// unsupported platform (desktop / web without Unity).
 class FlunityNotAttachedException implements Exception {
   @override
   String toString() =>
-      'FlunityNotAttachedException: outlets require a native Unity bridge '
-      '(iOS / Android). On WebGL, use FlunityWebGLController directly for now.';
+      'FlunityNotAttachedException: no Unity bridge is attached. On WebGL, '
+      'mount a FlunityWebGLView (or UnitySceneRoute) before calling outlets; '
+      'on iOS / Android the native bridge attaches automatically. Outlets are '
+      'unavailable on desktop / web targets without a Unity view.';
 }
 
 /// Reference to a Unity MonoBehaviour instance returned by [FlunityInvoker.find].
@@ -83,7 +86,7 @@ class FlunityComponentHandle {
 /// [FlunityInvoker] yourself — outbound transport state and the inbound
 /// reply listener are wired once at construction time.
 class FlunityInvoker {
-  FlunityInvoker._() {
+  FlunityInvoker._({bool attachNativeListener = true}) {
     // Register the typed reply factories the invoker depends on. Doing this
     // here (rather than relying on the consumer's main() to call
     // registerBuiltInMessages) means `flunity.invoke(...)` works out of the
@@ -91,8 +94,17 @@ class FlunityInvoker {
     // to RawMessage and every call times out. Idempotent.
     OutletReply.register();
     OutletFindReply.register();
-    UnityMessageListeners.instance.addAlwaysListener(_onMessage);
+    if (attachNativeListener) {
+      UnityMessageListeners.instance.addAlwaysListener(_onMessage);
+    }
   }
+
+  /// Builds an invoker with the native MethodChannel listener detached, so
+  /// tests can drive it purely through an attached [MessageTransport] without
+  /// touching platform channels.
+  @visibleForTesting
+  factory FlunityInvoker.forTest() =>
+      FlunityInvoker._(attachNativeListener: false);
 
   /// 5 seconds. Override per call via the `timeout` parameter on [invoke] /
   /// [find] when you expect long-running Unity work.
@@ -107,6 +119,31 @@ class FlunityInvoker {
 
   final Map<String, _PendingCall> _pending = <String, _PendingCall>{};
   int _nonceCounter = 0;
+
+  MessageTransport? _webTransport;
+  StreamSubscription<String>? _webSub;
+
+  /// Bind a WebGL [MessageTransport] so `invoke`/`find` route over it.
+  ///
+  /// Called automatically by [FlunityWebGLController]; you rarely call this
+  /// directly. A single transport is active at a time (matching the
+  /// one-Unity-instance assumption of the native path) — attaching a new one
+  /// replaces and tears down the previous binding.
+  void attachWebTransport(MessageTransport transport) {
+    if (identical(_webTransport, transport)) return;
+    _webSub?.cancel();
+    _webTransport = transport;
+    _webSub = transport.incoming.listen(_onMessage);
+  }
+
+  /// Unbind [transport] if it is the currently-attached one; otherwise a no-op.
+  /// Called automatically by [FlunityWebGLController.dispose].
+  void detachWebTransport(MessageTransport transport) {
+    if (!identical(_webTransport, transport)) return;
+    _webSub?.cancel();
+    _webSub = null;
+    _webTransport = null;
+  }
 
   /// Send an outlet invocation to Unity and await its reply.
   ///
@@ -124,7 +161,7 @@ class FlunityInvoker {
     Map<String, Object?>? args,
     Duration timeout = defaultTimeout,
   }) async {
-    _ensureNativeAvailable();
+    _ensureAvailable();
     final nonce = _nextNonce();
     final completer = Completer<Object?>();
     _pending[nonce] = _PendingCall(
@@ -199,7 +236,7 @@ class FlunityInvoker {
     String componentName, {
     Duration timeout = defaultTimeout,
   }) async {
-    _ensureNativeAvailable();
+    _ensureAvailable();
     final nonce = _nextNonce();
     final completer = Completer<Object?>();
     _pending[nonce] = _PendingCall(
@@ -309,14 +346,16 @@ class FlunityInvoker {
   }
 
   Future<void> _sendEnvelope(FlunityMessage message) {
-    return native.sendToUnity(
-      _bridgeGameObject,
-      _bridgeMethod,
-      jsonEncode(message.toJson()),
-    );
+    final json = jsonEncode(message.toJson());
+    final web = _webTransport;
+    if (web != null) {
+      return web.send(json);
+    }
+    return native.sendToUnity(_bridgeGameObject, _bridgeMethod, json);
   }
 
-  void _ensureNativeAvailable() {
+  void _ensureAvailable() {
+    if (_webTransport != null) return;
     if (kIsWeb) throw FlunityNotAttachedException();
     final p = defaultTargetPlatform;
     if (p != TargetPlatform.iOS && p != TargetPlatform.android) {

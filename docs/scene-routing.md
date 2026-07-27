@@ -70,7 +70,7 @@ UnitySceneRoute(
 )
 ```
 
-Both routes share the same `LoadScene` envelope, so Unity-side handling is identical regardless of transport.
+Both routes share the same `LoadScene` envelope, so Unity-side handling is identical regardless of transport. Outlets (`flunity.invoke` / `flunity.find`) work inside WebGL views too — mounting the view registers the bridge automatically.
 
 ## Caveats
 

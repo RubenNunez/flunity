@@ -107,7 +107,7 @@ public class Pet : MonoBehaviour {
 final ok = await flunity.invoke<bool>('Pet.Feed', args: {'amount': 10});
 ```
 
-The Future stays pending until Unity finishes the work — easy round-trip UX (disable buttons while busy, show progress, etc). See [docs/outlets.md](docs/outlets.md) for the full API. iOS / Android only in v1; WebGL outlet support tracked as Plan L.
+The Future stays pending until Unity finishes the work — easy round-trip UX (disable buttons while busy, show progress, etc). See [docs/outlets.md](docs/outlets.md) for the full API. Outlets work on iOS, Android, and WebGL — the same typed API on every target.
 
 For Unity → Flutter (or stream-style messaging), see [docs/bridge-api.md](docs/bridge-api.md). Built-in tools: a Logs sheet streams both sides into one buffer, and an Inspector tab lets you query the Unity scene (`tree`, `find`, `call`) from a typed terminal — see [docs/debugging.md](docs/debugging.md).
 
