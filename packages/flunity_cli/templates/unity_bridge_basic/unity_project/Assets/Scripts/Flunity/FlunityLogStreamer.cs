@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Text;
 using UnityEngine;
 
@@ -16,11 +17,40 @@ namespace Flunity {
     /// </code>
     /// Stack traces are forwarded only for warnings + errors to keep info
     /// logs cheap (no string allocs for trivial Debug.Log lines).
+    ///
+    /// Subscribes to the *threaded* callback so logs from worker threads
+    /// (async outlets, UnityWebRequest and Job System callbacks) are not
+    /// lost, but only ever hands them to the bridge from <c>Update</c>:
+    /// <see cref="FlunityBridge.SendRaw"/> reaches JNI on Android and a
+    /// Flutter MethodChannel on iOS, neither of which may be touched off the
+    /// main thread.
     /// </summary>
     [DisallowMultipleComponent]
     public class FlunityLogStreamer : MonoBehaviour {
+        // Bounded so a log storm from a worker thread can't grow the queue
+        // without limit if Update is starved or the object is disabled.
+        const int MaxQueuedPayloads = 512;
+
+        readonly ConcurrentQueue<string> _pending = new ConcurrentQueue<string>();
+        int _dropped;
+
         void OnEnable() { Application.logMessageReceivedThreaded += OnLog; }
         void OnDisable() { Application.logMessageReceivedThreaded -= OnLog; }
+
+        void Update() {
+            string payload;
+            while (_pending.TryDequeue(out payload)) {
+                FlunityBridge.SendRaw("flunity_log", payload);
+            }
+
+            int dropped = System.Threading.Interlocked.Exchange(ref _dropped, 0);
+            if (dropped > 0) {
+                FlunityBridge.SendRaw("flunity_log",
+                    "{\"level\":\"warn\",\"message\":\"" +
+                    FlunityJson.Escape($"[Flunity] dropped {dropped} log(s): forward queue full") +
+                    "\"}");
+            }
+        }
 
         void OnLog(string condition, string stackTrace, LogType type) {
             // No Flutter side in the Editor — forwarding `flunity_log` only
@@ -50,32 +80,20 @@ namespace Flunity {
             }
             var sb = new StringBuilder(condition.Length + 64);
             sb.Append("{\"level\":\"").Append(level)
-              .Append("\",\"message\":\"").Append(EscapeJson(condition))
+              .Append("\",\"message\":\"").Append(FlunityJson.Escape(condition))
               .Append('"');
             if (includeStack && !string.IsNullOrEmpty(stackTrace)) {
-                sb.Append(",\"stackTrace\":\"").Append(EscapeJson(stackTrace)).Append('"');
+                sb.Append(",\"stackTrace\":\"").Append(FlunityJson.Escape(stackTrace)).Append('"');
             }
             sb.Append('}');
-            FlunityBridge.SendRaw("flunity_log", sb.ToString());
+
+            // Building the payload is thread-safe; delivering it is not.
+            if (_pending.Count >= MaxQueuedPayloads) {
+                System.Threading.Interlocked.Increment(ref _dropped);
+                return;
+            }
+            _pending.Enqueue(sb.ToString());
         }
 
-        static string EscapeJson(string s) {
-            if (string.IsNullOrEmpty(s)) return "";
-            var sb = new StringBuilder(s.Length + 8);
-            foreach (var c in s) {
-                switch (c) {
-                    case '\\': sb.Append("\\\\"); break;
-                    case '"':  sb.Append("\\\""); break;
-                    case '\n': sb.Append("\\n"); break;
-                    case '\r': sb.Append("\\r"); break;
-                    case '\t': sb.Append("\\t"); break;
-                    default:
-                        if (c < 0x20) sb.AppendFormat("\\u{0:x4}", (int)c);
-                        else sb.Append(c);
-                        break;
-                }
-            }
-            return sb.ToString();
-        }
     }
 }

@@ -27,3 +27,9 @@ pubspec_overrides.yaml
 *.csproj
 *.sln
 *.unityproj
+
+# dotnet test project for the Unity-side C# helpers. Its .csproj is authored,
+# not Unity-generated, so it has to opt out of the *.csproj rule above.
+csharp/**/bin/
+csharp/**/obj/
+!csharp/**/*.csproj

@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <LangVersion>9.0</LangVersion>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+  </ItemGroup>
+
+  <!--
+    The class under test ships to users as a Unity source file. It is compiled
+    here directly (not copied) so the tests can never drift from what Unity
+    actually builds. This is why FlunityJson.cs must stay free of UnityEngine
+    references.
+  -->
+  <ItemGroup>
+    <Compile Include="../../packages/flunity_cli/templates/unity_bridge_basic/unity_project/Assets/Scripts/Flunity/FlunityJson.cs" Link="FlunityJson.cs" />
+  </ItemGroup>
+
+</Project>

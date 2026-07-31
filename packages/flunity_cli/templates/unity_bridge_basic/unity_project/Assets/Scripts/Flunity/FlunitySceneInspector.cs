@@ -73,9 +73,9 @@ namespace Flunity {
             if (!first) sb.Append(',');
             first = false;
             sb.Append('{')
-              .Append("\"id\":\"").Append(EscapeJson(sceneId)).Append('"')
+              .Append("\"id\":\"").Append(FlunityJson.Escape(sceneId)).Append('"')
               .Append(",\"parentId\":\"\"")
-              .Append(",\"name\":\"").Append(EscapeJson(sceneName)).Append('"')
+              .Append(",\"name\":\"").Append(FlunityJson.Escape(sceneName)).Append('"')
               .Append(",\"active\":true")
               .Append(",\"kind\":\"scene\"")
               .Append(",\"components\":[]")
@@ -94,8 +94,8 @@ namespace Flunity {
             first = false;
             sb.Append('{')
               .Append("\"id\":\"").Append(go.GetInstanceID()).Append('"')
-              .Append(",\"parentId\":\"").Append(EscapeJson(parentId)).Append('"')
-              .Append(",\"name\":\"").Append(EscapeJson(go.name)).Append('"')
+              .Append(",\"parentId\":\"").Append(FlunityJson.Escape(parentId)).Append('"')
+              .Append(",\"name\":\"").Append(FlunityJson.Escape(go.name)).Append('"')
               .Append(",\"active\":").Append(go.activeInHierarchy ? "true" : "false")
               .Append(",\"kind\":\"go\"")
               .Append(",\"childCount\":").Append(go.transform.childCount)
@@ -105,7 +105,7 @@ namespace Flunity {
                 if (c == null) continue;
                 if (!firstComp) sb.Append(',');
                 firstComp = false;
-                sb.Append('"').Append(EscapeJson(c.GetType().Name)).Append('"');
+                sb.Append('"').Append(FlunityJson.Escape(c.GetType().Name)).Append('"');
             }
             sb.Append("]}");
         }
@@ -164,8 +164,8 @@ namespace Flunity {
             var sb = new StringBuilder(2048);
             sb.Append("{\"found\":true")
               .Append(",\"id\":\"").Append(obj.GetInstanceID()).Append('"')
-              .Append(",\"name\":\"").Append(EscapeJson(obj.name)).Append('"')
-              .Append(",\"path\":\"").Append(EscapeJson(ScenePathOf(obj))).Append('"')
+              .Append(",\"name\":\"").Append(FlunityJson.Escape(obj.name)).Append('"')
+              .Append(",\"path\":\"").Append(FlunityJson.Escape(ScenePathOf(obj))).Append('"')
               .Append(",\"active\":").Append(obj.activeInHierarchy ? "true" : "false")
               .Append(",\"components\":[");
             bool firstComp = true;
@@ -181,7 +181,7 @@ namespace Flunity {
 
         void WriteComponentJson(StringBuilder sb, Component c) {
             var type = c.GetType();
-            sb.Append('{').Append("\"type\":\"").Append(EscapeJson(type.Name)).Append('"');
+            sb.Append('{').Append("\"type\":\"").Append(FlunityJson.Escape(type.Name)).Append('"');
             sb.Append(",\"fields\":[");
             bool first = true;
             foreach (var f in type.GetFields(BindingFlags.Public | BindingFlags.Instance)) {
@@ -190,9 +190,9 @@ namespace Flunity {
                 object val = null;
                 try { val = f.GetValue(c); } catch { /* ignore unreadable */ }
                 sb.Append('{')
-                  .Append("\"name\":\"").Append(EscapeJson(f.Name)).Append('"')
-                  .Append(",\"type\":\"").Append(EscapeJson(f.FieldType.Name)).Append('"')
-                  .Append(",\"value\":\"").Append(EscapeJson(ToDisplayString(val))).Append('"')
+                  .Append("\"name\":\"").Append(FlunityJson.Escape(f.Name)).Append('"')
+                  .Append(",\"type\":\"").Append(FlunityJson.Escape(f.FieldType.Name)).Append('"')
+                  .Append(",\"value\":\"").Append(FlunityJson.Escape(ToDisplayString(val))).Append('"')
                   .Append('}');
             }
             sb.Append("],\"outlets\":[");
@@ -203,7 +203,7 @@ namespace Flunity {
                 if (!firstOutlet) sb.Append(',');
                 firstOutlet = false;
                 string outletName = attr.Name ?? $"{type.Name}.{m.Name}";
-                sb.Append('"').Append(EscapeJson(outletName)).Append('"');
+                sb.Append('"').Append(FlunityJson.Escape(outletName)).Append('"');
             }
             sb.Append("]}");
         }
@@ -212,7 +212,7 @@ namespace Flunity {
 
         FlunityRawJson ErrorJson(string message) {
             var sb = new StringBuilder();
-            sb.Append("{\"found\":false,\"error\":\"").Append(EscapeJson(message)).Append("\"}");
+            sb.Append("{\"found\":false,\"error\":\"").Append(FlunityJson.Escape(message)).Append("\"}");
             return new FlunityRawJson(sb.ToString());
         }
 
@@ -231,24 +231,6 @@ namespace Flunity {
             return v.ToString();
         }
 
-        static string EscapeJson(string s) {
-            if (string.IsNullOrEmpty(s)) return "";
-            var sb = new StringBuilder(s.Length + 8);
-            foreach (var c in s) {
-                switch (c) {
-                    case '\\': sb.Append("\\\\"); break;
-                    case '"':  sb.Append("\\\""); break;
-                    case '\n': sb.Append("\\n"); break;
-                    case '\r': sb.Append("\\r"); break;
-                    case '\t': sb.Append("\\t"); break;
-                    default:
-                        if (c < 0x20) sb.AppendFormat("\\u{0:x4}", (int)c);
-                        else sb.Append(c);
-                        break;
-                }
-            }
-            return sb.ToString();
-        }
     }
 
     /// <summary>Args for <see cref="FlunitySceneInspector.Inspect"/>.</summary>

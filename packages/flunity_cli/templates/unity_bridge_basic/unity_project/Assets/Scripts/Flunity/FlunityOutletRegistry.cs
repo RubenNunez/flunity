@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -122,21 +123,13 @@ namespace Flunity {
 
         // ---------- outlet_call ----------
 
-        [Serializable] class OutletCallPayload {
-            public string name;
-            public string nonce;
-            public string target;
-            public string args;     // JSON object as raw string (extracted before deserialise)
-        }
-
         void HandleOutletCall(string payloadJson) {
-            // FlunityBridge's mini JSON helper extracts payload as a string.
-            // We re-extract `name`, `nonce`, `target` and treat `args` as a
-            // sub-object string we'll feed to JsonUtility per-method-arg-type.
-            string name = ExtractStringField(payloadJson, "name");
-            string nonce = ExtractStringField(payloadJson, "nonce");
-            string target = ExtractStringField(payloadJson, "target");
-            string argsJson = ExtractObjectField(payloadJson, "args");
+            // `args` stays a raw sub-object string that we feed to
+            // JsonUtility per-method-arg-type once the method is resolved.
+            string name = FlunityJson.GetString(payloadJson, "name");
+            string nonce = FlunityJson.GetString(payloadJson, "nonce");
+            string target = FlunityJson.GetString(payloadJson, "target");
+            string argsJson = FlunityJson.GetObject(payloadJson, "args");
 
             // Diagnostic: confirm receipt at the registry. If Flutter sends
             // an outlet_call and never sees this entry in the log sheet,
@@ -257,8 +250,8 @@ namespace Flunity {
         // ---------- outlet_find ----------
 
         void HandleOutletFind(string payloadJson) {
-            string nonce = ExtractStringField(payloadJson, "nonce");
-            string component = ExtractStringField(payloadJson, "component");
+            string nonce = FlunityJson.GetString(payloadJson, "nonce");
+            string component = FlunityJson.GetString(payloadJson, "component");
             if (string.IsNullOrEmpty(nonce) || string.IsNullOrEmpty(component)) {
                 Debug.LogError($"[Flunity] outlet_find missing nonce/component: {payloadJson}");
                 return;
@@ -316,30 +309,30 @@ namespace Flunity {
 
         void ReplyOk(string nonce, object value) {
             string valueJson = SerializeReturn(value);
-            string payload = "{\"nonce\":\"" + EscapeJson(nonce) +
+            string payload = "{\"nonce\":\"" + FlunityJson.Escape(nonce) +
                              "\",\"ok\":true,\"value\":" + valueJson + "}";
             FlunityBridge.SendRaw("outlet_reply", payload);
         }
 
         void ReplyError(string nonce, string error) {
-            string payload = "{\"nonce\":\"" + EscapeJson(nonce) +
+            string payload = "{\"nonce\":\"" + FlunityJson.Escape(nonce) +
                              "\",\"ok\":false,\"value\":null,\"error\":\"" +
-                             EscapeJson(error) + "\"}";
+                             FlunityJson.Escape(error) + "\"}";
             FlunityBridge.SendRaw("outlet_reply", payload);
         }
 
         void ReplyFind(string nonce, MonoBehaviour[] instances, Type declaringType) {
             var sb = new StringBuilder();
-            sb.Append("{\"nonce\":\"").Append(EscapeJson(nonce)).Append("\",\"components\":[");
+            sb.Append("{\"nonce\":\"").Append(FlunityJson.Escape(nonce)).Append("\",\"components\":[");
             for (int i = 0; i < instances.Length; i++) {
                 if (i > 0) sb.Append(',');
                 var inst = instances[i];
                 string id = IdentityFor(inst);
                 string nm = declaringType?.Name ?? inst.GetType().Name;
                 string path = ScenePathOf(inst.gameObject);
-                sb.Append("{\"id\":\"").Append(EscapeJson(id))
-                  .Append("\",\"name\":\"").Append(EscapeJson(nm))
-                  .Append("\",\"path\":\"").Append(EscapeJson(path)).Append("\"}");
+                sb.Append("{\"id\":\"").Append(FlunityJson.Escape(id))
+                  .Append("\",\"name\":\"").Append(FlunityJson.Escape(nm))
+                  .Append("\",\"path\":\"").Append(FlunityJson.Escape(path)).Append("\"}");
             }
             sb.Append("]}");
             FlunityBridge.SendRaw("outlet_find_reply", sb.ToString());
@@ -361,11 +354,16 @@ namespace Flunity {
             // [Serializable] reflection can't handle cleanly. The wrapper's
             // string is already JSON; insert verbatim.
             if (value is FlunityRawJson raw) return raw.json;
-            if (value is string s) return "\"" + EscapeJson(s) + "\"";
+            if (value is string s) return "\"" + FlunityJson.Escape(s) + "\"";
             if (value is bool b) return b ? "true" : "false";
-            if (value is int || value is long || value is float || value is double ||
-                value is short || value is byte) {
-                return Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture);
+            // Floats go through FlunityJson.Number, which maps NaN/Infinity to
+            // null. Emitting them bare makes the whole envelope undecodable,
+            // so one bad division would strand the call instead of the value.
+            if (value is float || value is double) {
+                return FlunityJson.Number(Convert.ToDouble(value, CultureInfo.InvariantCulture));
+            }
+            if (value is int || value is long || value is short || value is byte) {
+                return Convert.ToString(value, CultureInfo.InvariantCulture);
             }
             // Complex types: rely on Unity's JsonUtility (requires [Serializable]).
             // Hits a 10-level recursion cap and a layout cache that bites
@@ -375,75 +373,5 @@ namespace Flunity {
             catch { return "null"; }
         }
 
-        static string EscapeJson(string s) {
-            if (string.IsNullOrEmpty(s)) return "";
-            var sb = new StringBuilder(s.Length + 8);
-            foreach (var c in s) {
-                switch (c) {
-                    case '\\': sb.Append("\\\\"); break;
-                    case '"':  sb.Append("\\\""); break;
-                    case '\n': sb.Append("\\n"); break;
-                    case '\r': sb.Append("\\r"); break;
-                    case '\t': sb.Append("\\t"); break;
-                    default:
-                        if (c < 0x20) sb.AppendFormat("\\u{0:x4}", (int)c);
-                        else sb.Append(c);
-                        break;
-                }
-            }
-            return sb.ToString();
-        }
-
-        // ---- Mini JSON helpers (mirrors FlunityBridge.cs) ----
-
-        static string ExtractStringField(string json, string field) {
-            string key = "\"" + field + "\"";
-            int idx = json.IndexOf(key, StringComparison.Ordinal);
-            if (idx < 0) return null;
-            int colon = json.IndexOf(':', idx + key.Length);
-            if (colon < 0) return null;
-            int quote = json.IndexOf('"', colon + 1);
-            if (quote < 0) return null;
-            int end = quote + 1;
-            var sb = new StringBuilder();
-            while (end < json.Length) {
-                char c = json[end];
-                if (c == '\\' && end + 1 < json.Length) { sb.Append(json[end + 1]); end += 2; continue; }
-                if (c == '"') break;
-                sb.Append(c);
-                end += 1;
-            }
-            return sb.ToString();
-        }
-
-        static string ExtractObjectField(string json, string field) {
-            string key = "\"" + field + "\"";
-            int idx = json.IndexOf(key, StringComparison.Ordinal);
-            if (idx < 0) return null;
-            int colon = json.IndexOf(':', idx + key.Length);
-            if (colon < 0) return null;
-            int braceStart = colon + 1;
-            while (braceStart < json.Length && char.IsWhiteSpace(json[braceStart])) braceStart++;
-            if (braceStart >= json.Length || json[braceStart] != '{') return null;
-            int depth = 0;
-            bool inString = false;
-            bool escaped = false;
-            for (int i = braceStart; i < json.Length; i++) {
-                char c = json[i];
-                if (inString) {
-                    if (escaped) escaped = false;
-                    else if (c == '\\') escaped = true;
-                    else if (c == '"') inString = false;
-                    continue;
-                }
-                if (c == '"') { inString = true; continue; }
-                if (c == '{') depth++;
-                else if (c == '}') {
-                    depth--;
-                    if (depth == 0) return json.Substring(braceStart, i - braceStart + 1);
-                }
-            }
-            return null;
-        }
     }
 }
