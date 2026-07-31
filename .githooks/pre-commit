@@ -1,0 +1,27 @@
+#!/usr/bin/env sh
+#
+# Catches the formatting slip that otherwise costs a full CI round-trip.
+# Installed by `melos bootstrap` (sets core.hooksPath to .githooks).
+#
+# Skip once with:  git commit --no-verify
+set -e
+
+# Nothing to check if no Dart files are staged.
+if ! git diff --cached --name-only --diff-filter=ACM | grep -q '\.dart$'; then
+  exit 0
+fi
+
+if ! command -v melos >/dev/null 2>&1; then
+  echo "pre-commit: melos not on PATH, skipping format check." >&2
+  exit 0
+fi
+
+if ! melos run format-check >/dev/null 2>&1; then
+  echo
+  echo "pre-commit: Dart formatting check failed."
+  echo "Run 'melos run format' and stage the result."
+  echo
+  # Show what would change, without touching the working tree.
+  melos run format-check 2>&1 | grep -E '^\[.*\]: Changed ' || true
+  exit 1
+fi

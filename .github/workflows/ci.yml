@@ -10,7 +10,7 @@ jobs:
   bridge:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
@@ -24,3 +24,18 @@ jobs:
       - run: melos run format-check
       - run: melos run analyze
       - run: melos run test
+
+  # The bridge's Unity half ships as template C# and had no coverage at all,
+  # which is where both wire-format bugs fixed on this branch lived.
+  # FlunityJson.cs is deliberately free of UnityEngine references so it can be
+  # compiled and tested here with no editor install. The rest of the Unity
+  # scripts still need one — `melos run check-unity-scripts` type-checks those
+  # locally against an installed editor.
+  unity_csharp:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - run: dotnet test csharp/Flunity.Json.Tests --verbosity minimal

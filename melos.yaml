@@ -11,6 +11,11 @@ ignore:
 command:
   bootstrap:
     runPubGetInParallel: true
+    hooks:
+      # Point git at the tracked hooks so a formatting slip is caught locally
+      # instead of costing a CI round-trip. Non-fatal: bootstrap must still
+      # work outside a git checkout (CI archives, vendored copies).
+      post: git config core.hooksPath .githooks || true
   version:
     branch: main
     workspaceChangelog: true
@@ -22,6 +27,14 @@ scripts:
   test:
     description: Run tests in every package
     run: 'melos exec --dir-exists=test -- "if grep -q ''sdk: flutter'' pubspec.yaml; then flutter test; else dart test; fi"'
+  test-unity:
+    description: Run the Unity-side C# tests (needs the dotnet SDK).
+    run: dotnet test csharp/Flunity.Json.Tests
+  check-unity-scripts:
+    description: >-
+      Type-check the Unity C# templates against the installed Unity editor's
+      assemblies. Skips cleanly when Unity is not installed — CI cannot run it.
+    run: ./tool/check_unity_scripts.sh
   format:
     description: Format Dart files under lib/, test/, bin/ (skips templates/).
     # Loop over the canonical source dirs in each package, only invoking
