@@ -1,7 +1,7 @@
 import 'dart:async';
-import 'dart:collection';
 
 import 'package:flunity_bridge/src/transport/message_transport.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
 /// [MessageTransport] backed by an [InAppWebViewController]. Routes outbound
@@ -11,10 +11,9 @@ class InAppWebViewMessageTransport implements MessageTransport {
   InAppWebViewMessageTransport();
 
   InAppWebViewController? _webViewController;
-  final Completer<void> _ready = Completer<void>();
+  Completer<void> _ready = Completer<void>();
   final StreamController<String> _incoming =
       StreamController<String>.broadcast();
-  final Queue<String> _pending = Queue<String>();
   bool _disposed = false;
 
   @override
@@ -23,18 +22,26 @@ class InAppWebViewMessageTransport implements MessageTransport {
   @override
   Stream<String> get incoming => _incoming.stream;
 
+  /// Resolves once the message has been handed to the WebView.
+  ///
+  /// Messages sent before the JS shim signals ready wait here rather than
+  /// resolving early: callers time their own operations off this future, so
+  /// resolving at enqueue time would charge them for Unity's boot. Waiters
+  /// resume in the order they arrived, which is what keeps a `load_scene`
+  /// ahead of the `outlet_call` that depends on it.
   @override
   Future<void> send(String json) async {
     if (_disposed) throw StateError('InAppWebViewMessageTransport disposed');
-    if (_webViewController == null || !_ready.isCompleted) {
-      _pending.add(json);
-      return;
-    }
-    await _evaluate(json);
+    if (!_ready.isCompleted) await _ready.future;
+    if (_disposed) throw StateError('InAppWebViewMessageTransport disposed');
+    await evaluate(json);
   }
 
   @override
   Future<void> reload() async {
+    // The new document has not run the JS shim yet, so re-arm the gate:
+    // `window.flunity` is undefined until `flunity_ready` fires again.
+    if (_ready.isCompleted) _ready = Completer<void>();
     await _webViewController?.reload();
   }
 
@@ -42,7 +49,8 @@ class InAppWebViewMessageTransport implements MessageTransport {
   Future<void> dispose() async {
     if (_disposed) return;
     _disposed = true;
-    _pending.clear();
+    // Wake anything parked on the gate so it fails fast instead of hanging.
+    if (!_ready.isCompleted) _ready.complete();
     await _incoming.close();
     _webViewController = null;
   }
@@ -73,13 +81,13 @@ class InAppWebViewMessageTransport implements MessageTransport {
   Future<void> markReady() async {
     if (_disposed || _ready.isCompleted) return;
     _ready.complete();
-    while (_pending.isNotEmpty) {
-      final next = _pending.removeFirst();
-      await _evaluate(next);
-    }
   }
 
-  Future<void> _evaluate(String json) async {
+  /// Hands one JSON envelope to the page. Overridden in tests to exercise the
+  /// gate and ordering without a live WebView.
+  @protected
+  @visibleForOverriding
+  Future<void> evaluate(String json) async {
     final controller = _webViewController;
     if (controller == null) return;
     final escaped = _jsString(json);

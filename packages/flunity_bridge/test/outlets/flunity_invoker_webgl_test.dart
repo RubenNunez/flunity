@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flunity_bridge/src/outlets/flunity_invoker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -223,5 +224,85 @@ void main() {
     // process the reply twice (second lookup finds no pending — harmless here,
     // but this guards the idempotency contract).
     expect(await future, 42);
+  });
+
+  group('the timeout budget covers the reply, not the boot', () {
+    // Unity WebGL takes seconds to tens of seconds to come up, and the
+    // transport parks sends until its JS shim is ready. Starting the clock at
+    // call time meant every early invoke expired before it was ever delivered,
+    // then reported "did not reply" once the real reply arrived late.
+    test('a call parked before ready is not charged for the wait', () {
+      FakeAsync().run((async) {
+        final invoker = FlunityInvoker.forTest();
+        final fake = FakeMessageTransport(startReady: false);
+        invoker.attachWebTransport(fake);
+
+        Object? error;
+        String? value;
+        invoker
+            .invoke<String>(
+              'Greeter.Greet',
+              timeout: const Duration(seconds: 5),
+            )
+            .then<void>(
+              (v) {
+                value = v;
+              },
+              onError: (Object e) {
+                error = e;
+              },
+            );
+
+        async.elapse(const Duration(seconds: 30));
+        expect(fake.sentMessages, isEmpty, reason: 'still parked on the gate');
+        expect(error, isNull, reason: 'nothing was delivered to time out');
+
+        fake.markReady();
+        async.flushMicrotasks();
+        expect(fake.sentMessages, hasLength(1));
+
+        final nonce = _payloadOf(fake.sentMessages.single)['nonce'] as String;
+        fake.pushFromUnity(
+          jsonEncode({
+            'type': 'outlet_reply',
+            'payload': {'nonce': nonce, 'ok': true, 'value': 'Hello!'},
+          }),
+        );
+        async.flushMicrotasks();
+
+        expect(error, isNull);
+        expect(value, 'Hello!');
+      });
+    });
+
+    test('the clock still runs once the call has been delivered', () {
+      FakeAsync().run((async) {
+        final invoker = FlunityInvoker.forTest();
+        final fake = FakeMessageTransport(startReady: false);
+        invoker.attachWebTransport(fake);
+
+        Object? error;
+        invoker
+            .invoke<String>(
+              'Greeter.Greet',
+              timeout: const Duration(seconds: 5),
+            )
+            .then<void>(
+              (_) {},
+              onError: (Object e) {
+                error = e;
+              },
+            );
+
+        async.elapse(const Duration(seconds: 30));
+        fake.markReady();
+        async.flushMicrotasks();
+        expect(error, isNull);
+
+        // Delivered, and Unity never answers.
+        async.elapse(const Duration(seconds: 5));
+        expect(error, isA<FlunityOutletTimeoutException>());
+      });
+    });
   });
 }

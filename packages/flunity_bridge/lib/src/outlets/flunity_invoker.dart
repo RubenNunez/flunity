@@ -164,14 +164,7 @@ class FlunityInvoker {
     _ensureAvailable();
     final nonce = _nextNonce();
     final completer = Completer<Object?>();
-    _pending[nonce] = _PendingCall(
-      completer: completer,
-      timer: Timer(timeout, () {
-        if (_pending.remove(nonce) != null && !completer.isCompleted) {
-          completer.completeError(FlunityOutletTimeoutException(name, timeout));
-        }
-      }),
-    );
+    _pending[nonce] = _PendingCall(completer: completer);
 
     final call = OutletCall(
       name: name,
@@ -183,13 +176,14 @@ class FlunityInvoker {
     try {
       await _sendEnvelope(call);
     } catch (e) {
-      _pending.remove(nonce)?.timer.cancel();
+      _pending.remove(nonce)?.cancelTimer();
       flunityLogs.log(
         '← outlet_call $name (nonce $nonce) send failed: $e',
         level: FlunityLogLevel.error,
       );
       rethrow;
     }
+    _armTimeout(nonce, name, timeout);
 
     try {
       final result = await completer.future;
@@ -218,6 +212,28 @@ class FlunityInvoker {
     }
   }
 
+  /// Starts the reply clock for [nonce].
+  ///
+  /// Deliberately called only after the transport reports the envelope
+  /// delivered. The WebGL transport parks sends until Unity's JS shim is
+  /// ready, so arming at call time charged the caller's budget for Unity's
+  /// boot — a call issued on the first frame always expired, and the genuine
+  /// reply then arrived with no pending entry to match.
+  ///
+  /// A no-op if the call has already been answered.
+  void _armTimeout(String nonce, String label, Duration timeout) {
+    final pending = _pending[nonce];
+    if (pending == null) return;
+    pending.timer = Timer(timeout, () {
+      final entry = _pending.remove(nonce);
+      if (entry != null && !entry.completer.isCompleted) {
+        entry.completer.completeError(
+          FlunityOutletTimeoutException(label, timeout),
+        );
+      }
+    });
+  }
+
   static String _formatOutletCall(OutletCall c) {
     final argSummary = c.args == null || c.args!.isEmpty ? '' : ' ${c.args}';
     final tgt = c.target == null ? '' : ' target=${c.target}';
@@ -239,16 +255,7 @@ class FlunityInvoker {
     _ensureAvailable();
     final nonce = _nextNonce();
     final completer = Completer<Object?>();
-    _pending[nonce] = _PendingCall(
-      completer: completer,
-      timer: Timer(timeout, () {
-        if (_pending.remove(nonce) != null && !completer.isCompleted) {
-          completer.completeError(
-            FlunityOutletTimeoutException('find($componentName)', timeout),
-          );
-        }
-      }),
-    );
+    _pending[nonce] = _PendingCall(completer: completer);
 
     final find = OutletFind(nonce: nonce, component: componentName);
     flunityLogs.log(
@@ -258,13 +265,14 @@ class FlunityInvoker {
     try {
       await _sendEnvelope(find);
     } catch (e) {
-      _pending.remove(nonce)?.timer.cancel();
+      _pending.remove(nonce)?.cancelTimer();
       flunityLogs.log(
         '← outlet_find $componentName (nonce $nonce) send failed: $e',
         level: FlunityLogLevel.error,
       );
       rethrow;
     }
+    _armTimeout(nonce, 'find($componentName)', timeout);
 
     final raw = await completer.future;
     if (raw is List<FlunityComponentRef>) {
@@ -329,7 +337,7 @@ class FlunityInvoker {
         );
         return;
       }
-      pending.timer.cancel();
+      pending.cancelTimer();
       if (parsed.ok) {
         pending.completer.complete(parsed.value);
       } else {
@@ -340,7 +348,7 @@ class FlunityInvoker {
     } else if (parsed is OutletFindReply) {
       final pending = _pending.remove(parsed.nonce);
       if (pending == null) return;
-      pending.timer.cancel();
+      pending.cancelTimer();
       pending.completer.complete(parsed.components);
     }
   }
@@ -370,9 +378,14 @@ class FlunityInvoker {
 }
 
 class _PendingCall {
-  _PendingCall({required this.completer, required this.timer});
+  _PendingCall({required this.completer});
   final Completer<Object?> completer;
-  final Timer timer;
+
+  /// Armed once the transport reports the call delivered — see
+  /// [FlunityInvoker.invoke]. Null while the call is still on its way out.
+  Timer? timer;
+
+  void cancelTimer() => timer?.cancel();
 }
 
 /// Process-wide [FlunityInvoker] singleton. Use this rather than
