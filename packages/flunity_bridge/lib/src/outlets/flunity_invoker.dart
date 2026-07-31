@@ -164,7 +164,7 @@ class FlunityInvoker {
     _ensureAvailable();
     final nonce = _nextNonce();
     final completer = Completer<Object?>();
-    _pending[nonce] = _PendingCall(completer: completer);
+    _pending[nonce] = _PendingCall(completer: completer, label: name);
 
     final call = OutletCall(
       name: name,
@@ -183,7 +183,7 @@ class FlunityInvoker {
       );
       rethrow;
     }
-    _armTimeout(nonce, name, timeout);
+    _armTimeout(nonce, timeout);
 
     try {
       final result = await completer.future;
@@ -221,17 +221,45 @@ class FlunityInvoker {
   /// reply then arrived with no pending entry to match.
   ///
   /// A no-op if the call has already been answered.
-  void _armTimeout(String nonce, String label, Duration timeout) {
+  void _armTimeout(String nonce, Duration timeout) {
     final pending = _pending[nonce];
     if (pending == null) return;
     pending.timer = Timer(timeout, () {
       final entry = _pending.remove(nonce);
       if (entry != null && !entry.completer.isCompleted) {
         entry.completer.completeError(
-          FlunityOutletTimeoutException(label, timeout),
+          FlunityOutletTimeoutException(entry.label, timeout),
         );
       }
     });
+  }
+
+  /// Fails the call a malformed reply belongs to.
+  ///
+  /// Unity did answer, so letting the call sit out its timeout and then report
+  /// that the outlet "did not reply" points debugging at the wrong side of the
+  /// bridge. The envelope decoded as JSON, so `payload.nonce` is usually
+  /// readable even when the rest of the payload is not.
+  void _failMalformedReply(Map<String, Object?> json, Object error) {
+    final payload = json['payload'];
+    final dynamic nonce = payload is Map ? payload['nonce'] : null;
+    final pending = nonce is String ? _pending.remove(nonce) : null;
+
+    flunityLogs.log(
+      'outlet_reply rx: malformed payload '
+      '(nonce=${nonce is String ? nonce : 'unreadable'}): $error',
+      level: FlunityLogLevel.error,
+    );
+
+    if (pending == null) return;
+    pending.cancelTimer();
+    if (!pending.completer.isCompleted) {
+      pending.completer.completeError(
+        FlunityOutletException(
+          '${pending.label}: malformed reply from Unity: $error',
+        ),
+      );
+    }
   }
 
   static String _formatOutletCall(OutletCall c) {
@@ -255,7 +283,10 @@ class FlunityInvoker {
     _ensureAvailable();
     final nonce = _nextNonce();
     final completer = Completer<Object?>();
-    _pending[nonce] = _PendingCall(completer: completer);
+    _pending[nonce] = _PendingCall(
+      completer: completer,
+      label: 'find($componentName)',
+    );
 
     final find = OutletFind(nonce: nonce, component: componentName);
     flunityLogs.log(
@@ -272,7 +303,7 @@ class FlunityInvoker {
       );
       rethrow;
     }
-    _armTimeout(nonce, 'find($componentName)', timeout);
+    _armTimeout(nonce, timeout);
 
     final raw = await completer.future;
     if (raw is List<FlunityComponentRef>) {
@@ -321,10 +352,7 @@ class FlunityInvoker {
     try {
       parsed = FlunityMessage.fromJson(json);
     } catch (e) {
-      flunityLogs.log(
-        'outlet_reply rx: fromJson failed: $e',
-        level: FlunityLogLevel.error,
-      );
+      _failMalformedReply(json, e);
       return;
     }
 
@@ -378,8 +406,12 @@ class FlunityInvoker {
 }
 
 class _PendingCall {
-  _PendingCall({required this.completer});
+  _PendingCall({required this.completer, required this.label});
   final Completer<Object?> completer;
+
+  /// What the caller asked for, e.g. `Creature.Feed` or `find(Pet)`. Used in
+  /// timeout and malformed-reply errors so they name the outlet.
+  final String label;
 
   /// Armed once the transport reports the call delivered — see
   /// [FlunityInvoker.invoke]. Null while the call is still on its way out.

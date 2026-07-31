@@ -226,6 +226,94 @@ void main() {
     expect(await future, 42);
   });
 
+  group('a reply that cannot be parsed', () {
+    // Unity answered, so the call must not sit out its whole timeout and then
+    // claim the outlet "did not reply" — that sends you looking in the wrong
+    // place entirely.
+    test('fails its call immediately when the nonce is readable', () async {
+      final invoker = FlunityInvoker.forTest();
+      final fake = FakeMessageTransport();
+      invoker.attachWebTransport(fake);
+
+      final future = invoker.invoke<int>(
+        'Creature.Health',
+        timeout: const Duration(seconds: 30),
+      );
+      await _settle();
+      final nonce = _payloadOf(fake.sentMessages.single)['nonce'] as String;
+
+      // `ok` must be a bool; OutletReply.register rejects this payload.
+      fake.pushFromUnity(
+        jsonEncode({
+          'type': 'outlet_reply',
+          'payload': {'nonce': nonce, 'ok': 'yes', 'value': 1},
+        }),
+      );
+
+      await expectLater(
+        future,
+        throwsA(
+          isA<FlunityOutletException>().having(
+            (e) => e.unityMessage,
+            'unityMessage',
+            allOf(contains('Creature.Health'), contains('malformed')),
+          ),
+        ),
+      );
+    });
+
+    test('does not disturb other in-flight calls', () async {
+      final invoker = FlunityInvoker.forTest();
+      final fake = FakeMessageTransport();
+      invoker.attachWebTransport(fake);
+
+      final bad = invoker.invoke<int>('Creature.Health');
+      final good = invoker.invoke<int>('Creature.Age');
+      await _settle();
+
+      final nonces = fake.sentMessages
+          .map((m) => _payloadOf(m)['nonce'] as String)
+          .toList();
+
+      fake.pushFromUnity(
+        jsonEncode({
+          'type': 'outlet_reply',
+          'payload': {'nonce': nonces[0], 'ok': 'yes'},
+        }),
+      );
+      await expectLater(bad, throwsA(isA<FlunityOutletException>()));
+
+      fake.pushFromUnity(
+        jsonEncode({
+          'type': 'outlet_reply',
+          'payload': {'nonce': nonces[1], 'ok': true, 'value': 3},
+        }),
+      );
+      expect(await good, 3);
+    });
+
+    test('undecodable JSON leaves the stream usable', () async {
+      final invoker = FlunityInvoker.forTest();
+      final fake = FakeMessageTransport();
+      invoker.attachWebTransport(fake);
+
+      fake.pushFromUnity('this is not json {');
+      await _settle();
+
+      final future = invoker.invoke<int>('Counter.Get');
+      await _settle();
+      final nonce = _payloadOf(fake.sentMessages.single)['nonce'] as String;
+      fake.pushFromUnity(
+        jsonEncode({
+          'type': 'outlet_reply',
+          'payload': {'nonce': nonce, 'ok': true, 'value': 9},
+        }),
+      );
+
+      expect(await future, 9);
+    });
+  });
+
   group('the timeout budget covers the reply, not the boot', () {
     // Unity WebGL takes seconds to tens of seconds to come up, and the
     // transport parks sends until its JS shim is ready. Starting the clock at
