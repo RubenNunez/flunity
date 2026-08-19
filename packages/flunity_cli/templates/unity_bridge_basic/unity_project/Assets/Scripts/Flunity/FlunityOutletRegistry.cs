@@ -244,14 +244,44 @@ namespace Flunity {
                 ReplyError(nonce, "Task canceled");
                 return;
             }
-            // Task<T> exposes Result via the `Result` property reflectively.
-            var resultProp = t.GetType().GetProperty("Result");
-            object value = null;
-            if (resultProp != null && resultProp.PropertyType != typeof(void) &&
-                resultProp.PropertyType.Name != "VoidTaskResult") {
-                value = resultProp.GetValue(t);
+            ReplyOk(nonce, ResultOf(t));
+        }
+
+        /// Unwrap the value of a completed Task / Task<T>.
+        ///
+        /// IL2CPP WARNING: the obvious implementation —
+        /// `t.GetType().GetProperty("Result").GetValue(t)` — works in the
+        /// editor and silently returns null in an IL2CPP player. Nothing calls
+        /// `Task<bool>.get_Result` statically, so managed stripping removes it
+        /// and the reflective lookup finds nothing. The symptom is nasty
+        /// because it is not an error: the reply still goes out with
+        /// `ok:true`, just `value:null`, so Flutter sees `invoke<bool>()`
+        /// resolve to null and the caller reads it as a falsy result.
+        ///
+        /// Naming the closed generic types in real `is` patterns forces IL2CPP
+        /// to emit each `get_Result`, so the common cases never depend on
+        /// reflection. The reflective tail still covers exotic return types —
+        /// on IL2CPP it may yield null for those, which is why anything the
+        /// bridge can actually serialize is listed explicitly.
+        static object ResultOf(Task t) {
+            switch (t) {
+                case Task<bool> b: return b.Result;
+                case Task<int> i: return i.Result;
+                case Task<long> l: return l.Result;
+                case Task<float> f: return f.Result;
+                case Task<double> d: return d.Result;
+                case Task<string> s: return s.Result;
+                case Task<FlunityRawJson> r: return r.Result;
+                case Task<object> o: return o.Result;
             }
-            ReplyOk(nonce, value);
+            var type = t.GetType();
+            if (!type.IsGenericType) return null; // plain Task -> void
+            var resultProp = type.GetProperty("Result");
+            if (resultProp == null || resultProp.PropertyType == typeof(void) ||
+                resultProp.PropertyType.Name == "VoidTaskResult") {
+                return null;
+            }
+            return resultProp.GetValue(t);
         }
 
         // ---------- outlet_find ----------
