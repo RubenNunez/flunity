@@ -94,8 +94,9 @@ public class FlunityBatchmode
         // "x86-64 (Magic Leap) support is now limited" and the build aborts.
         // x86_64 emulators run ARM64 apps through the emulator's own binary
         // translation instead.
-        PlayerSettings.Android.targetArchitectures =
-            AndroidArchitecture.ARMv7 | AndroidArchitecture.ARM64;
+        // ARM64 only. ARMv7 (32-bit) doubles IL2CPP AOT compile time for
+        // devices that Play Store 64-bit requirements already retired.
+        PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
 #endif
 
         // Unity needs a JDK to drive its Android SDK tools. When the Hub's

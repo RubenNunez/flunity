@@ -101,11 +101,20 @@ Future<BundleSummary> bundleIos({required FlunityProject project}) async {
 /// Flutter app's `android/` directory and best-effort wires it into
 /// `settings.gradle[.kts]` and the app's `build.gradle[.kts]`.
 Future<BundleSummary> bundleAndroid({required FlunityProject project}) async {
-  final source = Directory(project.buildDir);
+  var source = Directory(project.buildDir);
   if (!source.existsSync()) {
     throw BundleException(
       'No Unity Android build at ${project.buildDir}. Run `flunity build android` first.',
     );
+  }
+
+  // Unity exports the Gradle module as <buildDir>/unityLibrary. Copying the
+  // buildDir itself would produce android/unityLibrary/unityLibrary, and
+  // Gradle then reports "Could not resolve project :unityLibrary — no
+  // variants exist" because the module directory holds no build.gradle.
+  final nested = Directory(p.join(source.path, 'unityLibrary'));
+  if (nested.existsSync()) {
+    source = nested;
   }
 
   final androidDir = Directory(p.join(project.paths.flutterApp, 'android'));
