@@ -14,7 +14,10 @@ class FlutterSdkCheck implements Check {
   @override
   Future<CheckResult> run() async {
     try {
-      final result = await Process.run('flutter', ['--version', '--machine']);
+      // Windows resolves executables by extension: spawning bare 'flutter'
+      // throws "cannot find the file specified" even when it is on PATH.
+      final flutter = Platform.isWindows ? 'flutter.bat' : 'flutter';
+      final result = await Process.run(flutter, ['--version', '--machine']);
       if (result.exitCode != 0) {
         return CheckResult.fail(
           'Could not run `flutter --version`.',

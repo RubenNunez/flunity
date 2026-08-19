@@ -11,6 +11,10 @@ import 'package:mason_logger/mason_logger.dart';
 import 'package:path/path.dart' as p;
 
 class CreateCommand extends Command<int> {
+  /// Windows resolves executables by extension — spawning bare 'flutter'
+  /// fails with "cannot find the file specified" even when it is on PATH.
+  static String get _flutterExe => Platform.isWindows ? 'flutter.bat' : 'flutter';
+
   CreateCommand({
     required Logger logger,
     String? templateRootOverride,
@@ -155,7 +159,7 @@ dependency_overrides:
         'Generating platform projects via flutter create',
       );
       try {
-        await runOrThrow('flutter', [
+        await runOrThrow(_flutterExe, [
           'create',
           '--org',
           argResults!['org'] as String,
@@ -188,7 +192,7 @@ dependency_overrides:
       // nothing changed, but Android manifest changes can affect pub).
       final pubGet = _logger.progress('flutter pub get');
       try {
-        await runOrThrow('flutter', [
+        await runOrThrow(_flutterExe, [
           'pub',
           'get',
         ], workingDirectory: flutterAppDir);
