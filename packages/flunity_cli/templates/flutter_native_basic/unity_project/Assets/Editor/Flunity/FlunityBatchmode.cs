@@ -102,12 +102,17 @@ public class FlunityBatchmode
         // Unity needs a JDK to drive its Android SDK tools. When the Hub's
         // OpenJDK module isn't installed, Unity fails with "Failed to update
         // Android SDK package list" — fall back to JAVA_HOME.
+        //
+        // UnityEditor.Android only exists when Android Build Support is
+        // installed and active, same as UnityEditor.iOS.Xcode below.
+#if UNITY_ANDROID
         var javaHome = System.Environment.GetEnvironmentVariable("JAVA_HOME");
         if (!string.IsNullOrEmpty(javaHome) && System.IO.Directory.Exists(javaHome))
         {
             UnityEditor.Android.AndroidExternalToolsSettings.jdkRootPath = javaHome;
             Debug.Log("Flunity: using JDK from JAVA_HOME: " + javaHome);
         }
+#endif
 
         AssetDatabase.SaveAssets();
     }
