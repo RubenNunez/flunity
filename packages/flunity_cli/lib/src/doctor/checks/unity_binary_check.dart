@@ -6,12 +6,18 @@ import 'package:flunity_cli/src/unity/unity_locator.dart';
 /// Verifies a Unity Editor binary is locatable. Required for `flunity build`
 /// to drive Unity in batch mode for native (iOS/Android) targets.
 class UnityBinaryCheck implements Check {
+  UnityBinaryCheck({this.unityProjectPath});
+
+  /// Path to the Unity project, so we can prefer the editor version it was
+  /// authored with instead of the newest one installed.
+  final String? unityProjectPath;
+
   @override
   String get name => 'Unity Editor binary';
 
   @override
   Future<CheckResult> run() async {
-    final found = UnityLocator.locate();
+    final found = UnityLocator.locate(projectPath: unityProjectPath);
     if (found == null) {
       return CheckResult.warn(
         'Could not locate a Unity Editor binary.',

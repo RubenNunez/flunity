@@ -57,8 +57,14 @@ class DoctorCommand extends Command<int> {
           port: project.webgl.devServer.port,
         ),
       ],
-      FlunityTarget.ios => [UnityBinaryCheck(), XcodeCheck()],
-      FlunityTarget.android => [UnityBinaryCheck(), AndroidSdkCheck()],
+      FlunityTarget.ios => [
+        UnityBinaryCheck(unityProjectPath: project.paths.unityProject),
+        XcodeCheck(),
+      ],
+      FlunityTarget.android => [
+        UnityBinaryCheck(unityProjectPath: project.paths.unityProject),
+        AndroidSdkCheck(),
+      ],
     };
   }
 }

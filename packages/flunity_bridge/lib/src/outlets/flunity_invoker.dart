@@ -165,6 +165,8 @@ class FlunityInvoker {
     final nonce = _nextNonce();
     final completer = Completer<Object?>();
     _pending[nonce] = _PendingCall(completer: completer, label: name);
+    final Future<Object?> reply = completer.future;
+    _keepErrorsAddressed(reply);
 
     final call = OutletCall(
       name: name,
@@ -186,7 +188,7 @@ class FlunityInvoker {
     _armTimeout(nonce, timeout);
 
     try {
-      final result = await completer.future;
+      final result = await reply;
       flunityLogs.log(
         '→ outlet_reply $name (nonce $nonce) ok value=${_truncate(result)}',
         level: FlunityLogLevel.info,
@@ -287,6 +289,8 @@ class FlunityInvoker {
       completer: completer,
       label: 'find($componentName)',
     );
+    final Future<Object?> reply = completer.future;
+    _keepErrorsAddressed(reply);
 
     final find = OutletFind(nonce: nonce, component: componentName);
     flunityLogs.log(
@@ -305,7 +309,7 @@ class FlunityInvoker {
     }
     _armTimeout(nonce, timeout);
 
-    final raw = await completer.future;
+    final raw = await reply;
     if (raw is List<FlunityComponentRef>) {
       flunityLogs.log(
         '→ outlet_find_reply $componentName (nonce $nonce) → ${raw.length} matches',
@@ -379,6 +383,23 @@ class FlunityInvoker {
       pending.cancelTimer();
       pending.completer.complete(parsed.components);
     }
+  }
+
+  /// Attach a no-op error listener to a pending reply future.
+  ///
+  /// [invoke] / [find] register the pending call (and start its timeout) and
+  /// only reach `await reply` *after* `await _sendEnvelope(...)` has returned.
+  /// If the reply future error-completes during that window — the timeout
+  /// elapsing while a slow or wedged platform channel is still in flight —
+  /// Dart sees an error delivered to a future nobody is listening to and
+  /// reports it as an unhandled zone error. The caller's `try` / `catch` /
+  /// `finally` are then skipped entirely, so a UI that disabled a button for
+  /// the duration of the call never re-enables it.
+  ///
+  /// Listening here marks the error as delivered; the real `await reply`
+  /// further down still receives it and rethrows to the caller as normal.
+  static void _keepErrorsAddressed(Future<Object?> reply) {
+    unawaited(reply.then((_) {}, onError: (Object _, StackTrace __) {}));
   }
 
   Future<void> _sendEnvelope(FlunityMessage message) {

@@ -55,7 +55,9 @@ public class FlunityBatchmode
         }
 
         Debug.Log("Exporting Android project in batchmode.");
-      
+
+        ApplyAndroidExportSettings();
+
         ProjectExportCheckerResult result = projectExportChecker.PreCheckAndroid();
 
 #if UNITY_ANDROID
@@ -70,6 +72,44 @@ public class FlunityBatchmode
         throw new System.Exception("Build platform is not Android.");
 #endif
 
+    }
+
+
+    // Batchmode has no GUI to tick these boxes in, so apply the settings the
+    // Android library export requires and let the checker verify them. Without
+    // this, `flunity build android` aborts on things a human would otherwise
+    // set by hand in File -> Build Profiles / Player Settings.
+    static void ApplyAndroidExportSettings()
+    {
+        // "Export Project" — we want a Gradle project (the unityLibrary
+        // module), not a finished APK.
+        EditorUserBuildSettings.exportAsGoogleAndroidProject = true;
+
+#if UNITY_ANDROID
+#if UNITY_6000_0_OR_NEWER
+        // Unity 6 defaults to GameActivity; Unity-as-a-Library needs Activity.
+        PlayerSettings.Android.applicationEntry = AndroidApplicationEntry.Activity;
+#endif
+        // ARMv7 + ARM64 only. Do NOT add X86_64: Unity 6 reduced it to
+        // "x86-64 (Magic Leap) support is now limited" and the build aborts.
+        // x86_64 emulators run ARM64 apps through the emulator's own binary
+        // translation instead.
+        // ARM64 only. ARMv7 (32-bit) doubles IL2CPP AOT compile time for
+        // devices that Play Store 64-bit requirements already retired.
+        PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
+#endif
+
+        // Unity needs a JDK to drive its Android SDK tools. When the Hub's
+        // OpenJDK module isn't installed, Unity fails with "Failed to update
+        // Android SDK package list" — fall back to JAVA_HOME.
+        var javaHome = System.Environment.GetEnvironmentVariable("JAVA_HOME");
+        if (!string.IsNullOrEmpty(javaHome) && System.IO.Directory.Exists(javaHome))
+        {
+            UnityEditor.Android.AndroidExternalToolsSettings.jdkRootPath = javaHome;
+            Debug.Log("Flunity: using JDK from JAVA_HOME: " + javaHome);
+        }
+
+        AssetDatabase.SaveAssets();
     }
 
     // public so this function can be called directly from the command line.

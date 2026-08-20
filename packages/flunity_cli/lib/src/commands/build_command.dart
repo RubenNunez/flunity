@@ -60,7 +60,8 @@ class BuildCommand extends Command<int> {
     if (target == null) return 64;
 
     final unityPath =
-        (argResults!['unity'] as String?) ?? UnityLocator.locate();
+        (argResults!['unity'] as String?) ??
+        UnityLocator.locate(projectPath: project.paths.unityProject);
     if (unityPath == null) {
       _logger
         ..err('Could not locate a Unity Editor binary.')

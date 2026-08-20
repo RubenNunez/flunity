@@ -4,6 +4,8 @@
 
 package com.flunity.bridge.messaging
 
+import android.os.Handler
+import android.os.Looper
 import com.flunity.bridge.constants.NativeConstants.Companion.methodNameSendToFlutter
 import io.flutter.plugin.common.MethodChannel
 
@@ -17,18 +19,36 @@ import io.flutter.plugin.common.MethodChannel
  *     nativeAPI.CallStatic("sendToFlutter", json);
  * }
  * ```
+ *
+ * THREADING: Unity calls in from its own `UnityMain` thread, but
+ * `MethodChannel.invokeMethod` is `@UiThread`. Calling it from any other
+ * thread throws
+ *
+ *     java.lang.RuntimeException: Methods marked with @UiThread must be
+ *     executed on the main thread. Current thread: UnityMain
+ *
+ * inside Unity's JNI call, which kills EVERY Unity -> Flutter message —
+ * including outlet replies, so `flunity.invoke(...)` futures never resolve and
+ * the bridge looks one-way. Hop onto the main looper before touching the
+ * channel.
  */
 class SendToFlutter {
     companion object {
         var methodChannel: MethodChannel? = null
 
+        private val mainHandler = Handler(Looper.getMainLooper())
+
         @JvmStatic
         fun sendToFlutter(data: String) {
             val channel = methodChannel
-            if (channel != null) {
+            if (channel == null) {
+                println("Couldn't send message from Unity to Flutter: method channel hasn't been initialised")
+                return
+            }
+            if (Looper.myLooper() == Looper.getMainLooper()) {
                 channel.invokeMethod(methodNameSendToFlutter, data)
             } else {
-                println("Couldn't send message from Unity to Flutter: method channel hasn't been initialised")
+                mainHandler.post { channel.invokeMethod(methodNameSendToFlutter, data) }
             }
         }
     }

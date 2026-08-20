@@ -67,3 +67,9 @@ export 'package:flunity_bridge/src/native/native_preferences.dart'
     show FlunityNativePreferences, MessageFromUnityListeningBehaviour;
 export 'package:flunity_bridge/src/native/unity_message_listener.dart'
     show UnityMessageListener;
+// The always-listener registry. A host app that needs to observe Unity
+// messages outside a mounted FlunityNativeView — waiting on `scene_ready` to
+// dismiss a splash, for instance — has no other entry point, and the outlet
+// invoker itself is built on it.
+export 'package:flunity_bridge/src/native/unity_message_listeners.dart'
+    show UnityMessageListeners;
