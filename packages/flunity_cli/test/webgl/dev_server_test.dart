@@ -52,6 +52,21 @@ void main() {
       expect(r.headers.contentType?.mimeType, 'application/wasm');
     },
   );
+
+  test(
+    '.wasm.br URL is served as opaque brotli bytes without Content-Encoding',
+    () async {
+      final server = await UnityDevServer.start(rootDir: root.path, port: 0);
+      addTearDown(server.stop);
+      final r = await _get(
+        'http://${server.host}:${server.port}/app.wasm.br',
+        acceptEncoding: 'br, gzip',
+      );
+      expect(r.statusCode, 200);
+      expect(r.headers.value('content-encoding'), isNull);
+      expect(r.headers.contentType?.mimeType, 'application/wasm');
+    },
+  );
 }
 
 Future<HttpClientResponse> _get(String url, {String? acceptEncoding}) async {

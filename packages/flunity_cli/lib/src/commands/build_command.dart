@@ -31,6 +31,14 @@ class BuildCommand extends Command<int> {
             'iOS only: target the Simulator SDK instead of the Device SDK. '
             'Equivalent to flipping Player Settings → iOS → Target SDK = '
             '"Simulator SDK" for this build only.',
+      )
+      ..addFlag(
+        'release',
+        negatable: false,
+        help:
+            'WebGL only: optimized IL2CPP player (slow compile). '
+            'Default WebGL builds are development players for fast iteration; '
+            'ship Android/iOS with `flunity build android|ios` instead.',
       );
   }
 
@@ -98,6 +106,12 @@ class BuildCommand extends Command<int> {
       return 64;
     }
 
+    final release = argResults!['release'] == true;
+    if (release && target != FlunityTarget.webgl) {
+      _logger.err('--release is only valid with target webgl.');
+      return 64;
+    }
+
     final args = [
       '-batchmode',
       '-nographics',
@@ -114,6 +128,7 @@ class BuildCommand extends Command<int> {
         '-flunitySdk',
         simulator ? 'simulator' : 'device',
       ],
+      if (target == FlunityTarget.webgl && release) '-release',
       '-logFile',
       '-',
     ];

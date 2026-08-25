@@ -54,16 +54,13 @@ shelf.Handler _buildHandler(String rootDir) {
     if (precompressed != null) {
       headers[HttpHeaders.contentEncodingHeader] = precompressed.encoding;
       headers[HttpHeaders.varyHeader] = 'Accept-Encoding';
-    } else {
-      // The URL itself ends in .br or .gz (Unity's compressed builds reference
-      // files by their compressed name directly). Set Content-Encoding so the
-      // browser decompresses on the fly instead of treating the bytes as opaque.
-      final encoding = unityContentEncoding(p.basename(filePath));
-      if (encoding != null) {
-        headers[HttpHeaders.contentEncodingHeader] = encoding;
-        headers[HttpHeaders.varyHeader] = 'Accept-Encoding';
-      }
     }
+    // When the URL already ends in .br / .gz (Unity's default compressed
+    // build layout: dataUrl = "Build/webgl.data.br"), do NOT set
+    // Content-Encoding. Unity's loader decompresses those bytes in JS.
+    // Sending `Content-Encoding: br` makes the browser decompress first,
+    // then Unity fails with "Failed to download file … .data.br" — and
+    // Android WebView often refuses the response entirely.
     headers[HttpHeaders.cacheControlHeader] = 'no-store';
 
     final length = await servedFile.length();
@@ -101,6 +98,7 @@ shelf.Handler _unityHeadersMiddleware(shelf.Handler inner) {
       headers: <String, String>{
         'Cross-Origin-Opener-Policy': 'same-origin',
         'Cross-Origin-Embedder-Policy': 'require-corp',
+        'Cross-Origin-Resource-Policy': 'same-origin',
       },
     );
   };

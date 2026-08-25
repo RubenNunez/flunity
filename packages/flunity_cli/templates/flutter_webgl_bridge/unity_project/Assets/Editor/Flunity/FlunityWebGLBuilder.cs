@@ -15,21 +15,35 @@ using UnityEngine;
 
 public static class FlunityWebGLBuilder
 {
-    [MenuItem("Flunity/Build/WebGL")]
-    public static void BuildWebGLFromMenu() => BuildWebGL();
+    [MenuItem("Flunity/Build/WebGL (Dev)")]
+    public static void BuildWebGLFromMenu() => BuildWebGLInternal(development: true);
+
+    [MenuItem("Flunity/Build/WebGL (Release)")]
+    public static void BuildWebGLReleaseFromMenu() =>
+        BuildWebGLInternal(development: false);
 
     /// <summary>
     /// Builds the project's enabled scenes for the WebGL platform.
-    /// Output goes to <paramref name="overrideExportPath"/> if provided,
-    /// otherwise to `&lt;projectRoot&gt;/Builds/webgl`.
+    /// Output goes to `-exportPath` if passed on the Unity CLI, otherwise
+    /// `&lt;projectRoot&gt;/Builds/webgl`.
     ///
     /// Invoked headless by `flunity build webgl` via:
     ///     unity -batchmode -projectPath ... -executeMethod FlunityWebGLBuilder.BuildWebGL -quit
-    /// (with optional `-exportPath &lt;dir&gt;` to override output location).
+    /// Must have zero parameters — Unity's -executeMethod rejects optional args.
+    ///
+    /// Development is the default (fast IL2CPP). Pass `-release` for an
+    /// optimized player. Uncompressed output: Android WebView cannot load
+    /// Unity's .br payloads.
     /// </summary>
-    public static void BuildWebGL(string overrideExportPath = null)
+    public static void BuildWebGL()
     {
-        string exportPath = overrideExportPath ?? GetCliArg("-exportPath");
+        bool development = !HasCliFlag("-release");
+        BuildWebGLInternal(development);
+    }
+
+    private static void BuildWebGLInternal(bool development)
+    {
+        string exportPath = GetCliArg("-exportPath");
         if (string.IsNullOrEmpty(exportPath))
         {
             exportPath = Path.Combine(
@@ -50,20 +64,35 @@ public static class FlunityWebGLBuilder
             return;
         }
 
-        // Ensure Brotli compression for production-ish builds; users can
-        // override via Player Settings UI for development builds.
-        PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Brotli;
+        // Uncompressed: Android WebView cannot Brotli-decompress Unity's
+        // .br payloads (eval of compressed framework.js throws SyntaxError).
+        PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Disabled;
 
-        EditorUserBuildSettings.SwitchActiveBuildTarget(
-            BuildTargetGroup.WebGL, BuildTarget.WebGL);
+        PlayerSettings.SetIl2CppCompilerConfiguration(
+            BuildTargetGroup.WebGL,
+            development
+                ? Il2CppCompilerConfiguration.Debug
+                : Il2CppCompilerConfiguration.Release);
+        PlayerSettings.SetManagedStrippingLevel(
+            BuildTargetGroup.WebGL,
+            development
+                ? ManagedStrippingLevel.Minimal
+                : ManagedStrippingLevel.High);
 
-        Debug.Log($"Flunity: building WebGL → {exportPath}");
+        if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.WebGL)
+        {
+            EditorUserBuildSettings.SwitchActiveBuildTarget(
+                BuildTargetGroup.WebGL, BuildTarget.WebGL);
+        }
+
+        string kind = development ? "development" : "release";
+        Debug.Log($"Flunity: building WebGL ({kind}) → {exportPath}");
         BuildPlayerOptions opts = new BuildPlayerOptions
         {
             scenes = scenes,
             locationPathName = exportPath,
             target = BuildTarget.WebGL,
-            options = BuildOptions.None,
+            options = development ? BuildOptions.Development : BuildOptions.None,
         };
         BuildReport report = BuildPipeline.BuildPlayer(opts);
 
@@ -87,5 +116,15 @@ public static class FlunityWebGLBuilder
             if (args[i] == name) return args[i + 1];
         }
         return null;
+    }
+
+    private static bool HasCliFlag(string name)
+    {
+        var args = Environment.GetCommandLineArgs();
+        for (int i = 0; i < args.Length; i++)
+        {
+            if (args[i] == name) return true;
+        }
+        return false;
     }
 }
