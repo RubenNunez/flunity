@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flunity_bridge/src/flunity_message.dart';
 import 'package:flunity_bridge/src/outlets/flunity_invoker.dart';
+import 'package:flunity_bridge/src/transport/inapp_webview_transport.dart';
 import 'package:flunity_bridge/src/transport/message_transport.dart';
 
 /// High-level Flutter-side controller. Wraps a [MessageTransport] and
@@ -45,6 +47,14 @@ class FlunityWebGLController {
   }
 
   Future<void> reload() => _transport.reload();
+
+  /// PNG snapshot of the Unity canvas, or null when the transport cannot
+  /// capture (not attached yet / non-WebView transport).
+  Future<Uint8List?> captureFrame() {
+    final tr = _transport;
+    if (tr is InAppWebViewMessageTransport) return tr.takeScreenshot();
+    return Future.value(null);
+  }
 
   Future<void> dispose() async {
     if (_disposed) return;

@@ -55,6 +55,13 @@ class InAppWebViewMessageTransport implements MessageTransport {
     _webViewController = null;
   }
 
+  /// Snapshot of the current web content (PNG bytes), or null before the
+  /// controller is attached. Lets hosts draw a blurred still of the Unity
+  /// canvas behind their own overlays — Flutter's BackdropFilter cannot
+  /// sample a platform view.
+  Future<Uint8List?> takeScreenshot() =>
+      _webViewController?.takeScreenshot() ?? Future.value(null);
+
   /// Hooked by [FlunityWebGLView] when the platform controller is available.
   void attach(InAppWebViewController controller) {
     _webViewController = controller;
