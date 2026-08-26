@@ -57,7 +57,9 @@ flunity bundle <target>     # copies the build into the Flutter app
 
 `flunity build` runs Unity headless via batchmode against vendored Editor scripts; `flunity bundle` copies the output into the right place in `flutter_app/`. For iOS specifically, the first time you'll also need to drag `app/ios/UnityExport/unityLibrary/Unity-iPhone.xcodeproj` into your `Runner.xcworkspace` and embed `UnityFramework.framework` — see [native-setup.md](native-setup.md).
 
-For WebGL you can also use the in-Editor menu: open `unity_project/` in Unity → **Flunity → Build → WebGL**. iOS gets two menu items — **Flunity → Build → iOS (Device)** and **iOS (Simulator)**.
+For WebGL you can also use the in-Editor menu: open `unity_project/` in Unity → **Flunity → Build → WebGL (Dev)** (or **WebGL (Release)**). iOS gets two menu items — **Flunity → Build → iOS (Device)** and **iOS (Simulator)**.
+
+Editor already open? `flunity build` detects that (via the standalone `unity` CLI) and drives it directly instead of failing with "another Unity instance is running" — see [webgl-workflow.md](webgl-workflow.md#building-while-the-editor-is-open).
 
 ## 5. Run
 

@@ -54,6 +54,8 @@ flunity bundle android     # → flutter_app/android/unityLibrary/
 
 When multiple Editor versions are installed, the highest-numbered 6000.x install wins.
 
+Already have `unity_project/` open in the Editor? If the standalone `unity` CLI is installed, `flunity build` detects the lock and drives that open Editor directly instead of failing with "another Unity instance is running" — see [webgl-workflow.md § Building while the Editor is open](webgl-workflow.md#building-while-the-editor-is-open) for how detection works, the `--batch` escape hatch, and why Android still falls back to a less-precise path.
+
 `flunity bundle android` patches `flutter_app/android/settings.gradle` to `include ":unityLibrary"` and `flutter_app/android/app/build.gradle` to add `implementation project(":unityLibrary")`. Both patches are idempotent — safe to re-run.
 
 `flunity bundle ios` does **not** edit `project.pbxproj` automatically (text-editing Xcode project files is fragile). It prints a checklist instead:

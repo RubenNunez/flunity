@@ -35,6 +35,28 @@ Iterate by:
 - Brotli (`.br`) and gzip (`.gz`) precompressed asset support.
 - `Cache-Control: no-store` so you always see the latest build.
 
+## Building while the Editor is open
+
+`flunity build webgl` (and `ios` / `android`) used to require quitting Unity first — batchmode refuses to start a second instance against a project another Editor already has open:
+
+```
+Aborting batchmode due to fatal error:
+It looks like another Unity instance is running with this project open.
+```
+
+If the standalone `unity` CLI is installed — Unity Hub installs it at `~/.unity/bin/unity`; see the [Unity CLI reference](https://docs.unity.com/en-us/unity-cli/unity-cli-reference) — `flunity build` detects the open Editor and drives it directly instead of spawning batchmode:
+
+1. **Lock detection.** `<unity_project>/Temp/UnityLockfile` exists exactly while an Editor holds the project open. No lockfile → nothing changes; `flunity build` uses batchmode exactly as before.
+2. **Connected build.** With the project locked and the `unity` CLI available, `flunity build` invokes the same `Flunity/Build/...` menu item you'd click by hand in the Editor — `WebGL (Dev)` / `WebGL (Release)` for webgl, `iOS (Device)` / `iOS (Simulator)` for ios — over the CLI's pipeline connection (`unity cmd menu --path ...`). Output lands in the usual `unity_project/Builds/<target>/`, and `flunity build` only reports success once that artifact actually appears on disk.
+3. **Android** has no dedicated menu route yet, so the connected-Editor path falls back to the generic `unity cmd build` + status polling, which skips Flunity's Android-specific export setup (Gradle "Export Project" mode, ARM64-only architecture, JDK root). Quit the Editor for a guaranteed-correct Android build until that lands.
+
+Two things worth knowing:
+
+- **The Editor's active build target must already match.** iOS's and Android's export menu items pop a *blocking* dialog in the Editor if its active build target isn't already the one you're building, which would otherwise hang the connected-Editor path indefinitely. `flunity build` checks first (`unity cmd get_build_settings`) and fails fast with instructions instead — switch platforms in the Editor (`File → Build Profiles`) and re-run. WebGL is unaffected; its own menu handler switches targets itself with no dialog.
+- **`--batch`** forces the old batchmode path unconditionally, and `--timeout <minutes>` (default `30`) controls how long a connected-Editor build may run before `flunity build` gives up waiting.
+
+If the project is locked and the `unity` CLI isn't installed, `flunity build` says so directly — update Unity Hub to get it, or quit the Editor and re-run.
+
 ## Production loop (asset-bundled)
 
 ```bash
