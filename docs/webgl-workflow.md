@@ -47,6 +47,65 @@ flutter build apk           # or appbundle, ios, etc.
 
 At runtime, `FlunityWebGLView` starts an `InAppLocalhostServer` (via `flutter_inappwebview`) bound to `127.0.0.1:<random>` to serve the bundled WebGL — Unity WebGL refuses `file://` URLs.
 
+## Running WebGL on the iOS simulator (no Unity export)
+
+WebGL is also the fastest way to iterate on a **native-target** project: you get
+the Unity scene inside the simulator without building `UnityFramework` at all.
+Two things are in the way by default.
+
+**1. The iOS pod links UnityFramework unconditionally.** Without a simulator
+Unity export the app dies at launch:
+
+```
+dyld: symbol not found in flat namespace '_OBJC_CLASS_$_UnityFramework'
+```
+
+Set `FLUNITY_WEBGL_ONLY=1` — the podspec then compiles only the messaging
+sources and skips the vendored framework:
+
+```bash
+cd flutter_app/ios && FLUNITY_WEBGL_ONLY=1 pod install && cd ..
+FLUNITY_WEBGL_ONLY=1 flutter run -d <simulator-id> --dart-define=FLUNITY_FORCE_WEBGL=true
+```
+
+Keep the variable on `flutter run` too — Flutter re-runs `pod install` itself and
+would otherwise restore the full pod.
+
+**2. The host app still embeds the framework.** In the Runner target add
+
+```
+EXCLUDED_SOURCE_FILE_NAMES[sdk=iphonesimulator*] = UnityFramework.framework
+```
+
+so device builds keep embedding it and simulator builds skip it. On Flutter 3.47+
+also pin the project to CocoaPods (`flutter: config: enable-swift-package-manager: false`
+in `pubspec.yaml`) — the automatic SPM migration rewrites the Xcode project and
+breaks the Unity sub-project wiring.
+
+### When the WebGL build itself fails
+
+```
+Exception: FROZEN_CACHE is set, but cache file is missing: "sysroot_install.stamp"
+```
+
+Unity's Web Build Support module lost its prebuilt Emscripten cache. Unity Hub
+refuses to repair it ("already installed"), so restore the directory by hand:
+take `downloadUrl` for the `webgl` entry in `<editor>/modules.json`, then
+
+```bash
+curl -L -o webgl.pkg "<downloadUrl>"
+pkgutil --expand-full webgl.pkg webgl-expanded
+rsync -a webgl-expanded/**/BuildTools/Emscripten/emscripten/cache/ \
+  "<editor>/PlaybackEngines/WebGLSupport/BuildTools/Emscripten/emscripten/cache/"
+```
+
+### Blurring the scene behind Flutter UI
+
+Flutter's `BackdropFilter` cannot sample a platform view, so it never blurs the
+Unity WebView. `FlunityWebGLController.captureFrame()` returns a PNG snapshot of
+the canvas — draw that image blurred beneath your overlay, or blur the Flutter
+layers above the view and accept a sharp scene behind them.
+
 ## Iterating against a real Android device on the same network
 
 ```bash
