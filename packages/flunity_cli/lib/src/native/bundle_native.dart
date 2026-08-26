@@ -40,11 +40,15 @@ class BundleException implements Exception {
 /// We do NOT mutate `project.pbxproj` automatically — Xcode project files
 /// are fragile to text-edit and the canonical path requires the `xcodeproj`
 /// Ruby gem. The user gets a printable checklist in the returned notes.
-Future<BundleSummary> bundleIos({required FlunityProject project}) async {
-  final source = Directory(project.buildDir);
+Future<BundleSummary> bundleIos({
+  required FlunityProject project,
+  String? buildDir,
+}) async {
+  final dir = buildDir ?? project.buildDirFor(FlunityTarget.ios);
+  final source = Directory(dir);
   if (!source.existsSync()) {
     throw BundleException(
-      'No Unity iOS build at ${project.buildDir}. Run `flunity build ios` first.',
+      'No Unity iOS build at $dir. Run `flunity build ios` first.',
     );
   }
 
@@ -100,11 +104,15 @@ Future<BundleSummary> bundleIos({required FlunityProject project}) async {
 /// Copies the Android Unity export (`unityLibrary/` Gradle module) into the
 /// Flutter app's `android/` directory and best-effort wires it into
 /// `settings.gradle[.kts]` and the app's `build.gradle[.kts]`.
-Future<BundleSummary> bundleAndroid({required FlunityProject project}) async {
-  var source = Directory(project.buildDir);
+Future<BundleSummary> bundleAndroid({
+  required FlunityProject project,
+  String? buildDir,
+}) async {
+  final dir = buildDir ?? project.buildDirFor(FlunityTarget.android);
+  var source = Directory(dir);
   if (!source.existsSync()) {
     throw BundleException(
-      'No Unity Android build at ${project.buildDir}. Run `flunity build android` first.',
+      'No Unity Android build at $dir. Run `flunity build android` first.',
     );
   }
 

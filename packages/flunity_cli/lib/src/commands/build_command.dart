@@ -112,6 +112,9 @@ class BuildCommand extends Command<int> {
     final rest = argResults!.rest;
     final target = _resolveTarget(rest, project);
     if (target == null) return 64;
+    // The requested target's directory — a `target: webgl` manifest must still
+    // export iOS to Builds/ios (see FlunityProject.buildDirFor).
+    final targetBuildDir = project.buildDirFor(target);
 
     final simulator = argResults!['simulator'] == true;
     if (simulator && target != FlunityTarget.ios) {
@@ -193,7 +196,7 @@ class BuildCommand extends Command<int> {
 
     try {
       assertSafeRecursiveDelete(
-        targetPath: project.buildDir,
+        targetPath: targetBuildDir,
         allowedParent: project.rootDir,
         operation: 'clean Unity build output',
       );
@@ -202,7 +205,7 @@ class BuildCommand extends Command<int> {
       return 64;
     }
 
-    final exportDir = Directory(project.buildDir);
+    final exportDir = Directory(targetBuildDir);
     if (exportDir.existsSync()) {
       // Unity refuses to overwrite an existing iOS export directory in some
       // versions; the cleanest path is to wipe it first. WebGL is happy
@@ -222,6 +225,7 @@ class BuildCommand extends Command<int> {
         simulator: simulator,
         release: release,
         timeout: Duration(minutes: timeoutMinutes),
+        targetBuildDir: targetBuildDir,
       );
     }
 
@@ -236,7 +240,7 @@ class BuildCommand extends Command<int> {
       '-executeMethod',
       _unityExecuteMethod(target),
       '-exportPath',
-      project.buildDir,
+      targetBuildDir,
       if (target == FlunityTarget.ios) ...[
         '-flunitySdk',
         simulator ? 'simulator' : 'device',
@@ -254,7 +258,7 @@ class BuildCommand extends Command<int> {
       return 1;
     }
 
-    return _reportArtifactResult(project, target);
+    return _reportArtifactResult(project, target, targetBuildDir);
   }
 
   /// Drives the build through the already-connected Unity Editor instead of
@@ -265,6 +269,7 @@ class BuildCommand extends Command<int> {
     required bool simulator,
     required bool release,
     required Duration timeout,
+    required String targetBuildDir,
   }) async {
     // iOS's and Android's `Flunity/Build/...` menu items run
     // ProjectExportChecker's PreCheck* unconditionally, which pops a
@@ -326,13 +331,14 @@ class BuildCommand extends Command<int> {
         project: project,
         target: target,
         timeout: timeout,
+        targetBuildDir: targetBuildDir,
       );
       if (!fallbackOk) {
         _logger.err('Connected-Editor fallback build did not complete.');
       }
     }
 
-    return _reportArtifactResult(project, target);
+    return _reportArtifactResult(project, target, targetBuildDir);
   }
 
   /// Reads the Editor's active build target via the read-only
@@ -390,6 +396,7 @@ class BuildCommand extends Command<int> {
     required FlunityProject project,
     required FlunityTarget target,
     required Duration timeout,
+    required String targetBuildDir,
   }) async {
     final start = await _unityCli.runCommand(
       [
@@ -397,7 +404,7 @@ class BuildCommand extends Command<int> {
         '--target',
         _unityBuildTargetFlag(target),
         '--outputPath',
-        project.buildDir,
+        targetBuildDir,
         '--confirm',
         'true',
       ],
@@ -442,17 +449,21 @@ class BuildCommand extends Command<int> {
     return false;
   }
 
-  int _reportArtifactResult(FlunityProject project, FlunityTarget target) {
-    final exportDir = Directory(project.buildDir);
+  int _reportArtifactResult(
+    FlunityProject project,
+    FlunityTarget target,
+    String targetBuildDir,
+  ) {
+    final exportDir = Directory(targetBuildDir);
     if (!exportDir.existsSync() || exportDir.listSync().isEmpty) {
       _logger.err(
-        'Build finished but ${project.buildDir} is empty. Check the Unity '
+        'Build finished but $targetBuildDir is empty. Check the Unity '
         'log above (or the Editor Console, for a connected-Editor build).',
       );
       return 1;
     }
 
-    _logger.success('Unity build complete → ${project.buildDir}');
+    _logger.success('Unity build complete → $targetBuildDir');
     if (target != FlunityTarget.webgl) {
       _logger.info(
         'Next: flunity bundle ${target.name} to copy this into flutter_app/.',

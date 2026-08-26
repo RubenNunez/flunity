@@ -40,10 +40,18 @@ class FlunityProject {
   ///   1. `paths.unityBuildOverride` (legacy `unity_build:` field) wins.
   ///   2. Otherwise `<paths.unityBuilds>/<target.name>` —
   ///      e.g. `unity_project/Builds/webgl`, `Builds/ios`, `Builds/android`.
-  String get buildDir {
+  String get buildDir => buildDirFor(target);
+
+  /// Build directory for an explicitly requested [target].
+  ///
+  /// `flunity bundle ios` in a `target: webgl` project must read
+  /// `Builds/ios`, not `Builds/webgl` — a project can iterate on several
+  /// targets at once, so the manifest's `target` is only the default.
+  /// `unity_build_override`, when set, pins every target to one directory.
+  String buildDirFor(FlunityTarget requested) {
     final override = paths.unityBuildOverride;
     if (override != null) return override;
-    return p.join(paths.unityBuilds, target.name);
+    return p.join(paths.unityBuilds, requested.name);
   }
 }
 

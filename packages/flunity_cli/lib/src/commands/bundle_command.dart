@@ -47,15 +47,17 @@ class BundleCommand extends Command<int> {
     final target = _resolveTarget(rest, project);
     if (target == null) return 64;
 
+    // Read from the requested target's directory, not the manifest default.
+    final buildDir = project.buildDirFor(target);
     return switch (target) {
-      FlunityTarget.webgl => _bundleWebGL(project),
-      FlunityTarget.ios => _bundleIos(project),
-      FlunityTarget.android => _bundleAndroid(project),
+      FlunityTarget.webgl => _bundleWebGL(project, buildDir),
+      FlunityTarget.ios => _bundleIos(project, buildDir),
+      FlunityTarget.android => _bundleAndroid(project, buildDir),
     };
   }
 
-  Future<int> _bundleWebGL(FlunityProject project) async {
-    final indexHtml = File(p.join(project.buildDir, 'index.html'));
+  Future<int> _bundleWebGL(FlunityProject project, String buildDir) async {
+    final indexHtml = File(p.join(buildDir, 'index.html'));
     if (!indexHtml.existsSync()) {
       _logger.err(
         'No Unity WebGL build at ${indexHtml.path} — build WebGL first.',
@@ -64,7 +66,7 @@ class BundleCommand extends Command<int> {
     }
     try {
       await prepareWebGLBuild(
-        buildDir: project.buildDir,
+        buildDir: buildDir,
         shimSourcePath: p.join(
           project.paths.unityProject,
           'Assets',
@@ -91,9 +93,9 @@ class BundleCommand extends Command<int> {
     }
   }
 
-  Future<int> _bundleIos(FlunityProject project) async {
+  Future<int> _bundleIos(FlunityProject project, String buildDir) async {
     try {
-      final summary = await bundleIos(project: project);
+      final summary = await bundleIos(project: project, buildDir: buildDir);
       _logger.success(
         'Copied ${summary.fileCount} files → ${summary.destination}',
       );
@@ -109,9 +111,9 @@ class BundleCommand extends Command<int> {
     }
   }
 
-  Future<int> _bundleAndroid(FlunityProject project) async {
+  Future<int> _bundleAndroid(FlunityProject project, String buildDir) async {
     try {
-      final summary = await bundleAndroid(project: project);
+      final summary = await bundleAndroid(project: project, buildDir: buildDir);
       _logger.success(
         'Copied ${summary.fileCount} files → ${summary.destination}',
       );
