@@ -7,10 +7,12 @@ package com.flunity.bridge
 import com.flunity.bridge.constants.NativeConstants.Companion.logTag
 import com.flunity.bridge.constants.NativeConstants.Companion.uniqueIdentifier
 import com.flunity.bridge.messaging.SendToFlutter
+import com.flunity.bridge.messaging.NoUnityHandler
 import com.flunity.bridge.messaging.SendToUnity
 import com.flunity.bridge.platformView.UnityViewFactory
-import com.flunity.bridge.unity.ResumeUnityOnActivityResume
-import com.flunity.bridge.unity.UnityPlayerSingleton
+import com.flunity.bridge.unity.UnityAvailability
+import com.flunity.bridge.unity.UnityHost
+import androidx.lifecycle.LifecycleEventObserver
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
@@ -35,10 +37,18 @@ class FlunityBridgeAndroidPlugin : FlutterPlugin, ActivityAware {
     private var messenger: BinaryMessenger? = null
 
     // Messages from Flutter to this plugin will be sent to Unity via this:
-    private val methodCallHandler = SendToUnity()
+    // Declared by interface and created lazily: this class must never resolve
+    // a Unity type while GeneratedPluginRegistrant constructs it. Without the
+    // Unity library in the APK (WebGL-in-a-WebView builds) that threw
+    // NoClassDefFoundError and took every other plugin down with it.
+    private val methodCallHandler: MethodChannel.MethodCallHandler by lazy {
+        if (UnityAvailability.present) SendToUnity() else NoUnityHandler()
+    }
     // This lifecycle observer works around an issue with Unity freezing sometimes when
     // the app is brought back into foreground
-    private val resumeUnityOnActivityResume = ResumeUnityOnActivityResume()
+    private val resumeUnityOnActivityResume: LifecycleEventObserver? by lazy {
+        if (UnityAvailability.present) UnityHost.resumeObserver() else null
+    }
     // This is just so we can unregister the resumeUnityOnActivityResume lifecycle observer:
     private var activityPluginBinding: ActivityPluginBinding? = null
 
@@ -107,12 +117,12 @@ class FlunityBridgeAndroidPlugin : FlutterPlugin, ActivityAware {
 
         // UnityPlayerSingleton needs the activity which will be received in onAttachedToActivity
         // so that the UnityPlayer can be created
-        UnityPlayerSingleton.flutterActivity = binding.activity
+        if (UnityAvailability.present) UnityHost.attach(binding.activity)
 
         // See comments on ResumeActivityOnActivityResume for explanation of why this is needed
-        (binding.lifecycle as HiddenLifecycleReference)
-            .lifecycle
-            .addObserver(resumeUnityOnActivityResume)
+        resumeUnityOnActivityResume?.let {
+            (binding.lifecycle as HiddenLifecycleReference).lifecycle.addObserver(it)
+        }
         // So we can remove the observer later on detach
         activityPluginBinding = binding
     }
@@ -130,11 +140,11 @@ class FlunityBridgeAndroidPlugin : FlutterPlugin, ActivityAware {
                     "https://developer.android.com/guide/topics/resources/runtime-changes#restrict-activity " +
                     "for more information"
         )
-        UnityPlayerSingleton.flutterActivity = null
+        if (UnityAvailability.present) UnityHost.detach()
         // Remove the lifecycle observer
-        (activityPluginBinding?.lifecycle as? HiddenLifecycleReference)
-            ?.lifecycle
-            ?.removeObserver(resumeUnityOnActivityResume)
+        resumeUnityOnActivityResume?.let {
+            (activityPluginBinding?.lifecycle as? HiddenLifecycleReference)?.lifecycle?.removeObserver(it)
+        }
 
         // The new activity that will be created for these config changes gets attached to the exact same Flutter Engine.
         // The BinaryMessenger and MethodChannel stay the same.
@@ -143,12 +153,12 @@ class FlunityBridgeAndroidPlugin : FlutterPlugin, ActivityAware {
     // ActivityAware
     override fun onReattachedToActivityForConfigChanges(binding: ActivityPluginBinding) {
         Log.d(logTag, "onReattachedToActivityForConfigChanges")
-        UnityPlayerSingleton.flutterActivity = binding.activity
+        if (UnityAvailability.present) UnityHost.attach(binding.activity)
 
         // See comments on ResumeActivityOnActivityResume for explanation of why this is needed
-        (binding.lifecycle as HiddenLifecycleReference)
-            .lifecycle
-            .addObserver(resumeUnityOnActivityResume)
+        resumeUnityOnActivityResume?.let {
+            (binding.lifecycle as HiddenLifecycleReference).lifecycle.addObserver(it)
+        }
         // So we can remove the observer later on detach
         activityPluginBinding = binding
 
@@ -165,12 +175,12 @@ class FlunityBridgeAndroidPlugin : FlutterPlugin, ActivityAware {
         // Destroying Unity is important - it prevents the app from crashing if the user exits the app
         // using the Android back button, then re-opens the app and navigates back to a screen with Unity
         // (see https://github.com/learntoflutter/flutter_embed_unity/issues/39)
-        UnityPlayerSingleton.getInstance()?.destroy()
-        UnityPlayerSingleton.flutterActivity = null
+        if (UnityAvailability.present) UnityHost.destroy()
+        if (UnityAvailability.present) UnityHost.detach()
         // Remove the lifecycle observer
-        (activityPluginBinding?.lifecycle as? HiddenLifecycleReference)
-            ?.lifecycle
-            ?.removeObserver(resumeUnityOnActivityResume)
+        resumeUnityOnActivityResume?.let {
+            (activityPluginBinding?.lifecycle as? HiddenLifecycleReference)?.lifecycle?.removeObserver(it)
+        }
         
         activityPluginBinding = null
 

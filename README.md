@@ -60,6 +60,8 @@ For WebGL: build the WebGL target into `unity_project/Builds/webgl/` (or use **F
 
 For iOS / Android: run `flunity build ios` (or `flunity build android`). If the project is open in the Editor, Flunity drives *that* Editor through the Unity CLI (much faster warm); otherwise it runs Unity in batch mode with the bundled exporter. Never quit the Editor for a build.
 
+No Unity Android export at hand? The Flutter app still builds and runs with the WebGL player in a WebView: make the `:unityLibrary` Gradle include conditional on the directory existing and run with `--dart-define=FLUNITY_FORCE_WEBGL=true`. The Android plugin detects the missing Unity library at runtime and answers Unity calls with `unity_unavailable` instead of crashing plugin registration.
+
 ### 5. Run the dev loop
 
 **WebGL.** In one terminal:
