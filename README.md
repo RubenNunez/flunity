@@ -58,7 +58,7 @@ Open `my_app/unity_project/` in Unity 6 (6000.x).
 
 For WebGL: build the WebGL target into `unity_project/Builds/webgl/` (or use **Flunity → Build → WebGL** from the Unity menu).
 
-For iOS / Android: run `flunity build ios` (or `flunity build android`) — Flunity invokes Unity in batch mode using the bundled exporter.
+For iOS / Android: run `flunity build ios` (or `flunity build android`). If the project is open in the Editor, Flunity drives *that* Editor through the Unity CLI (much faster warm); otherwise it runs Unity in batch mode with the bundled exporter. Never quit the Editor for a build.
 
 ### 5. Run the dev loop
 
