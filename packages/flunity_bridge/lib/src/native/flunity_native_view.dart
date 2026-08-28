@@ -4,7 +4,10 @@
 // See packages/flunity_bridge/THIRDPARTY.md for full attribution.
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show PlatformViewHitTestBehavior;
+import 'package:flutter/services.dart';
 
 import 'native_constants.dart';
 import 'unity_message_listener.dart';
@@ -56,7 +59,30 @@ class _FlunityNativeViewState extends State<FlunityNativeView>
   Widget build(BuildContext context) {
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
-        return const AndroidView(viewType: NativeConstants.channelName);
+        // Hybrid Composition, not a plain AndroidView: Unity draws into a
+        // SurfaceView, and for that AndroidView falls back to Virtual Display
+        // mode — Unity renders off-screen, gets copied into a texture and
+        // composited late (measured ~26 fps on a Nothing Phone (1) while Unity
+        // itself ran at 60). With initExpensiveAndroidView the SurfaceView
+        // reaches the screen directly and Flutter composites on top.
+        return PlatformViewLink(
+          viewType: NativeConstants.channelName,
+          surfaceFactory: (context, controller) => AndroidViewSurface(
+            controller: controller as AndroidViewController,
+            gestureRecognizers: const <Factory<OneSequenceGestureRecognizer>>{},
+            hitTestBehavior: PlatformViewHitTestBehavior.opaque,
+          ),
+          onCreatePlatformView: (params) =>
+              PlatformViewsService.initExpensiveAndroidView(
+                  id: params.id,
+                  viewType: NativeConstants.channelName,
+                  layoutDirection: TextDirection.ltr,
+                  creationParamsCodec: const StandardMessageCodec(),
+                  onFocus: () => params.onFocusChanged(true),
+                )
+                ..addOnPlatformViewCreatedListener(params.onPlatformViewCreated)
+                ..create(),
+        );
       case TargetPlatform.iOS:
         return const UiKitView(viewType: NativeConstants.channelName);
       default:
