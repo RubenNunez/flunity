@@ -38,7 +38,14 @@ class UnityViewStack {
 
             // It's important to call windowFocusChanged, otherwise unity will not start
             // (not sure why - UnityPlayer is undocumented)
-            unityPlayerSingleton.windowFocusChanged(unityPlayerSingleton.getFrameLayout().requestFocus())
+            // Not `windowFocusChanged(requestFocus())`: this runs inside the platform view
+            // factory, before the new view is attached to a window, so requestFocus()
+            // returns false and Unity is told it LOST window focus -- and stops processing
+            // touches until told otherwise. The first view got away with it because the
+            // Activity's real focus event followed; a view re-created after going offstage
+            // (Hybrid Composition) gets no such event, and taps died (jellx, 2026-08-28).
+            unityPlayerSingleton.getFrameLayout().requestFocus()
+            unityPlayerSingleton.windowFocusChanged(true)
             // I don't know why, but when Unity is detached from an existing view and
             // added to a new view, we need to pause AND resume instead of just resume:
             unityPlayerSingleton.pause()
@@ -82,6 +89,8 @@ class UnityViewStack {
             if(unityPlayerSingleton != null) {
                 viewStack.last().attachUnity(unityPlayerSingleton)
                 Log.i(logTag, "Reattached Unity to existing view")
+                unityPlayerSingleton.getFrameLayout().requestFocus()
+                unityPlayerSingleton.windowFocusChanged(true) // see pushView
                 // I don't know why, but when Unity is reattached to an existing view
                 // we need to pause AND resume (even though Unity was never paused?):
 //                unityPlayerSingleton.windowFocusChanged(unityPlayerSingleton.getFrameLayout().requestFocus())
