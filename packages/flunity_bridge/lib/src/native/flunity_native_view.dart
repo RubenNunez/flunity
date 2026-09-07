@@ -20,9 +20,7 @@ import 'unity_message_listeners.dart';
 /// Use Flunity's `UnitySceneRoute` (or send `LoadScene` messages directly)
 /// to swap what the shared instance shows per Flutter route.
 ///
-/// Native targets only — throws [UnsupportedError] on web / desktop. Use
-/// `FlunityWebGLView` for the web target instead, or the target-aware
-/// `FlunityView` composite.
+/// Native targets only — throws [UnsupportedError] on web / desktop.
 class FlunityNativeView extends StatefulWidget {
   /// Called whenever Unity emits a message via `SendToFlutter.cs`.
   /// The string is the raw payload passed through Unity's bridge — by
@@ -88,8 +86,7 @@ class _FlunityNativeViewState extends State<FlunityNativeView>
       default:
         throw UnsupportedError(
           'FlunityNativeView is only supported on Android and iOS '
-          '(got: $defaultTargetPlatform). Use FlunityWebGLView for web, '
-          'or wrap them with FlunityView for target-aware mounting.',
+          '(got: $defaultTargetPlatform).',
         );
     }
   }

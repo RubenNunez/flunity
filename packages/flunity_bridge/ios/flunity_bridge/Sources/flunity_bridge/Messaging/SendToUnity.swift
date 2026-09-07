@@ -51,7 +51,7 @@ class SendToUnity {
         case NativeConstants.methodNameSendToUnity,
              NativeConstants.methodNamePauseUnity,
              NativeConstants.methodNameResumeUnity:
-            debugPrint("flunity_bridge iOS: native UnityFramework unavailable (WebGL-only mode).")
+            debugPrint("flunity_bridge iOS: native UnityFramework unavailable.")
             result(false)
         default:
             result(FlutterMethodNotImplemented)

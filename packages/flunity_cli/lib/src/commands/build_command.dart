@@ -13,7 +13,7 @@ import 'package:mason_logger/mason_logger.dart';
 /// `<unityBuilds>/<target>/`.
 ///
 /// The actual build logic lives in the Unity Editor scripts shipped with the
-/// templates (`FlunityWebGLBuilder` / `FlunityBatchmode` / `FlunityMenu`).
+/// templates (`FlunityBatchmode` / `FlunityMenu`).
 /// This command is the host-side launcher, and picks one of two routes:
 ///
 ///   - **Batch mode** (the original path): spawns a fresh `Unity -batchmode`
@@ -56,14 +56,6 @@ class BuildCommand extends Command<int> {
             '"Simulator SDK" for this build only.',
       )
       ..addFlag(
-        'release',
-        negatable: false,
-        help:
-            'WebGL only: optimized IL2CPP player (slow compile). '
-            'Default WebGL builds are development players for fast iteration; '
-            'ship Android/iOS with `flunity build android|ios` instead.',
-      )
-      ..addFlag(
         'batch',
         negatable: false,
         help:
@@ -95,7 +87,7 @@ class BuildCommand extends Command<int> {
 
   @override
   String get description =>
-      'Build the Unity project for the active target (webgl|ios|android).';
+      'Build the Unity project for the active target (ios|android).';
 
   @override
   String get invocation => 'flunity build [<target>]';
@@ -112,19 +104,12 @@ class BuildCommand extends Command<int> {
     final rest = argResults!.rest;
     final target = _resolveTarget(rest, project);
     if (target == null) return 64;
-    // The requested target's directory — a `target: webgl` manifest must still
-    // export iOS to Builds/ios (see FlunityProject.buildDirFor).
+    // The requested target's directory (see FlunityProject.buildDirFor).
     final targetBuildDir = project.buildDirFor(target);
 
     final simulator = argResults!['simulator'] == true;
     if (simulator && target != FlunityTarget.ios) {
       _logger.err('--simulator is only valid with --target ios.');
-      return 64;
-    }
-
-    final release = argResults!['release'] == true;
-    if (release && target != FlunityTarget.webgl) {
-      _logger.err('--release is only valid with target webgl.');
       return 64;
     }
 
@@ -208,8 +193,7 @@ class BuildCommand extends Command<int> {
     final exportDir = Directory(targetBuildDir);
     if (exportDir.existsSync()) {
       // Unity refuses to overwrite an existing iOS export directory in some
-      // versions; the cleanest path is to wipe it first. WebGL is happy
-      // either way, but consistency wins. Wiping it also means a stale
+      // versions; the cleanest path is to wipe it first. Wiping it also means a stale
       // artifact from a previous run can't produce a false-positive
       // "success" if this run fails silently.
       exportDir.deleteSync(recursive: true);
@@ -223,7 +207,6 @@ class BuildCommand extends Command<int> {
         project: project,
         target: target,
         simulator: simulator,
-        release: release,
         timeout: Duration(minutes: timeoutMinutes),
         targetBuildDir: targetBuildDir,
       );
@@ -245,7 +228,6 @@ class BuildCommand extends Command<int> {
         '-flunitySdk',
         simulator ? 'simulator' : 'device',
       ],
-      if (target == FlunityTarget.webgl && release) '-release',
       '-logFile',
       '-',
     ];
@@ -267,7 +249,6 @@ class BuildCommand extends Command<int> {
     required FlunityProject project,
     required FlunityTarget target,
     required bool simulator,
-    required bool release,
     required Duration timeout,
     required String targetBuildDir,
   }) async {
@@ -278,22 +259,14 @@ class BuildCommand extends Command<int> {
     // active build target doesn't already match — and a modal dialog on the
     // Editor's main thread hangs every subsequent `unity cmd` call until a
     // human dismisses it by hand. We fail fast on a mismatch instead of
-    // risking that hang. WebGL's own menu handler switches targets itself
-    // with no dialog (see FlunityWebGLBuilder.BuildWebGLInternal), so it's
-    // exempt from this check.
-    if (target != FlunityTarget.webgl) {
-      final mismatch = await _checkActiveBuildTarget(
-        project: project,
-        target: target,
-      );
-      if (mismatch != null) return mismatch;
-    }
-
-    final menuPath = _connectedEditorMenuPath(
-      target,
-      simulator: simulator,
-      release: release,
+    // risking that hang.
+    final mismatch = await _checkActiveBuildTarget(
+      project: project,
+      target: target,
     );
+    if (mismatch != null) return mismatch;
+
+    final menuPath = _connectedEditorMenuPath(target, simulator: simulator);
 
     if (menuPath != null) {
       _logger.info(
@@ -464,11 +437,9 @@ class BuildCommand extends Command<int> {
     }
 
     _logger.success('Unity build complete → $targetBuildDir');
-    if (target != FlunityTarget.webgl) {
-      _logger.info(
-        'Next: flunity bundle ${target.name} to copy this into flutter_app/.',
-      );
-    }
+    _logger.info(
+      'Next: flunity bundle ${target.name} to copy this into flutter_app/.',
+    );
     return 0;
   }
 
@@ -479,13 +450,10 @@ class BuildCommand extends Command<int> {
       return null;
     }
     return switch (rest.first) {
-      'webgl' => FlunityTarget.webgl,
       'ios' => FlunityTarget.ios,
       'android' => FlunityTarget.android,
       _ => () {
-        _logger.err(
-          'Unknown target "${rest.first}". Valid: webgl, ios, android.',
-        );
+        _logger.err('Unknown target "${rest.first}". Valid: ios, android.');
         return null;
       }(),
     };
@@ -493,16 +461,13 @@ class BuildCommand extends Command<int> {
 
   /// Menu item path for the connected-Editor route, or null when no
   /// Flunity menu item covers this (target, variant) combination yet — see
-  /// `Assets/Editor/Flunity/FlunityMenu.cs` / `FlunityWebGLBuilder.cs` in
+  /// `Assets/Editor/Flunity/FlunityMenu.cs` in
   /// `templates/unity_bridge_basic/` (the source of truth for what ships).
   String? _connectedEditorMenuPath(
     FlunityTarget target, {
     required bool simulator,
-    required bool release,
   }) {
     return switch (target) {
-      FlunityTarget.webgl =>
-        release ? 'Flunity/Build/WebGL (Release)' : 'Flunity/Build/WebGL (Dev)',
       FlunityTarget.ios =>
         simulator
             ? 'Flunity/Build/iOS (Simulator)'
@@ -512,13 +477,11 @@ class BuildCommand extends Command<int> {
   }
 
   String _unityBuildTargetFlag(FlunityTarget target) => switch (target) {
-    FlunityTarget.webgl => 'WebGL',
     FlunityTarget.ios => 'iOS',
     FlunityTarget.android => 'Android',
   };
 
   String _unityExecuteMethod(FlunityTarget target) => switch (target) {
-    FlunityTarget.webgl => 'FlunityWebGLBuilder.BuildWebGL',
     FlunityTarget.ios => 'FlunityBatchmode.ExportProjectIos',
     FlunityTarget.android => 'FlunityBatchmode.ExportProjectAndroid',
   };

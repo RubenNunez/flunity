@@ -1,6 +1,6 @@
 # Native setup (iOS / Android)
 
-End-to-end walkthrough for building a Flunity app that embeds Unity natively — `UnityFramework.xcframework` on iOS, a `unityLibrary` Gradle module on Android. If you want WebGL instead, see [webgl-workflow.md](./webgl-workflow.md). The honest comparison between the two lives in [target-comparison.md](./target-comparison.md).
+End-to-end walkthrough for building a Flunity app that embeds Unity natively — `UnityFramework.xcframework` on iOS, a `unityLibrary` Gradle module on Android.
 
 ## Prerequisites
 
@@ -54,7 +54,7 @@ flunity bundle android     # → flutter_app/android/unityLibrary/
 
 When multiple Editor versions are installed, the highest-numbered 6000.x install wins.
 
-Already have `unity_project/` open in the Editor? If the standalone `unity` CLI is installed, `flunity build` detects the lock and drives that open Editor directly instead of failing with "another Unity instance is running" — see [webgl-workflow.md § Building while the Editor is open](webgl-workflow.md#building-while-the-editor-is-open) for how detection works, the `--batch` escape hatch, and why Android still falls back to a less-precise path.
+Already have `unity_project/` open in the Editor? If the standalone `unity` CLI is installed, `flunity build` detects the lock and drives that open Editor directly instead of failing with "another Unity instance is running" (`--batch` forces the old behaviour; Android falls back to a less-precise path).
 
 `flunity bundle android` patches `flutter_app/android/settings.gradle` to `include ":unityLibrary"` and `flutter_app/android/app/build.gradle` to add `implementation project(":unityLibrary")`. Both patches are idempotent — safe to re-run.
 

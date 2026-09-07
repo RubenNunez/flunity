@@ -13,14 +13,14 @@ void main() {
   test('finds manifest in current directory', () {
     File(
       p.join(tmp.path, 'flunity.yaml'),
-    ).writeAsStringSync('name: x\ntarget: webgl');
+    ).writeAsStringSync('name: x\ntarget: ios');
     expect(findManifest(start: tmp.path), p.join(tmp.path, 'flunity.yaml'));
   });
 
   test('walks upward', () {
     File(
       p.join(tmp.path, 'flunity.yaml'),
-    ).writeAsStringSync('name: x\ntarget: webgl');
+    ).writeAsStringSync('name: x\ntarget: ios');
     final nested = Directory(p.join(tmp.path, 'flutter_app', 'lib'))
       ..createSync(recursive: true);
     expect(findManifest(start: nested.path), p.join(tmp.path, 'flunity.yaml'));

@@ -8,7 +8,7 @@ void main() {
     expect(restored, isA<Ping>());
   });
 
-  test('public API: FlunityWebGLConfig.bundled exported', () {
-    expect(FlunityWebGLConfig.bundled().assetPath, 'assets/unity_webgl/');
+  test('public API: the native view is exported', () {
+    expect(FlunityNativeView, isNotNull);
   });
 }

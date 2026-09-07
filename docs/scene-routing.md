@@ -1,6 +1,6 @@
 # Scene routing: one Unity, many Flutter routes
 
-The naive Flutter pattern is "mount `FlunityNativeView` (or `FlunityWebGLView`) inside each route that needs Unity". This works but is wasteful: each route push tears down Unity and re-instantiates it, dropping all in-Unity state and incurring a 1–3 second cold-start hitch.
+The naive Flutter pattern is "mount `FlunityNativeView` inside each route that needs Unity". This works but is wasteful: each route push tears down Unity and re-instantiates it, dropping all in-Unity state and incurring a 1–3 second cold-start hitch.
 
 Flunity ships `UnitySceneRoute` to support a different pattern: **mount Unity once at the app shell, then swap Unity scenes as Flutter routes change.**
 
@@ -50,27 +50,20 @@ When you push `/play`, `UnitySceneRoute` dispatches `LoadScene(scene: 'Game')` t
 
 The widget never owns a Unity instance — it's purely a route-scoped message dispatcher. This is what makes it transport-agnostic: pass any `Future<void> Function(FlunityMessage)` as `send` and it drives whatever transport you've wired up.
 
-## Native vs WebGL
+## Custom transports
 
-For the native template, `UnitySceneRoute.native` pre-wires `send` to:
-
-```dart
-sendToUnity('[FlunityBridge]', 'ReceiveFromFlutter', jsonEncode(message.toJson()))
-```
-
-…which matches the canonical `FlunityBridge` GameObject shipped in Phase 4's templates.
-
-For WebGL, pass your own `send` that goes through your `FlunityWebGLController`:
+`UnitySceneRoute` sends `LoadScene` over the native bridge by default. On a
+custom transport, pass your own `send`:
 
 ```dart
 UnitySceneRoute(
-  scene: 'Game',
-  send: (msg) => webglController.send(msg),
-  child: GamePage(),
+  send: (msg) => myTransport.send(msg),
+  ...
 )
 ```
 
-Both routes share the same `LoadScene` envelope, so Unity-side handling is identical regardless of transport. Outlets (`flunity.invoke` / `flunity.find`) work inside WebGL views too — mounting the view registers the bridge automatically.
+All transports share the same `LoadScene` envelope, so Unity-side handling is
+identical.
 
 ## Caveats
 
@@ -81,4 +74,4 @@ Both routes share the same `LoadScene` envelope, so Unity-side handling is ident
 ## When NOT to use it
 
 - **One-shot screens that need Unity briefly** — keep the per-route mount pattern. Tearing down Unity is fine if it only happens once per session.
-- **Multiple Unity instances at the same time** — neither WebGL nor native supports it well; the underlying UnityPlayer / UnityFramework is a singleton.
+- **Multiple Unity instances at the same time** — the underlying UnityPlayer / UnityFramework is a singleton.

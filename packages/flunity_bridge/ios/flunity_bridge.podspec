@@ -7,8 +7,7 @@
 # silently ignores it — surface the error early so users don't get a confusing
 # "duplicate symbols" or "module not found" later.
 framework_path = 'flunity_bridge/UnityFrameworkStubs/StaticFramework/UnityFramework.xcframework'
-webgl_only = ENV['FLUNITY_WEBGL_ONLY'] == '1'
-if !webgl_only && !File.exist?(framework_path)
+if !File.exist?(framework_path)
   raise "Error in flunity_bridge.podspec: #{framework_path} not found"
 end
 
@@ -25,15 +24,7 @@ adapted from flutter_embed_unity v2.0.0 (MIT).
   s.license          = { :file => '../THIRDPARTY-LICENSES/flutter_embed_unity-LICENSE.txt' }
   s.author           = { 'Flunity contributors' => 'noreply@example.com' }
   s.source           = { :path => '.' }
-  s.source_files     = if webgl_only
-                         [
-                           'flunity_bridge/Sources/flunity_bridge/Constants/**/*',
-                           'flunity_bridge/Sources/flunity_bridge/Messaging/**/*',
-                           'flunity_bridge/Sources/flunity_bridge/FlunityBridgeIosPlugin.swift',
-                         ]
-                       else
-                         'flunity_bridge/Sources/**/*'
-                       end
+  s.source_files     = 'flunity_bridge/Sources/**/*'
   s.dependency 'Flutter'
   s.platform         = :ios, '14.0'
 
@@ -51,13 +42,9 @@ adapted from flutter_embed_unity v2.0.0 (MIT).
   }
   s.swift_version = '5.0'
 
-  # Native Unity embedding requires UnityFramework.
-  # In WebGL-only mode we intentionally skip linking it.
-  unless webgl_only
-    # The vendored xcframework is a compile-time stub. The real UnityFramework
-    # is provided at app integration time by `flunity bundle ios` (which copies
-    # the user's actual Unity-built framework into the consuming Flutter app's
-    # ios/Frameworks tree and re-links).
-    s.vendored_frameworks = framework_path
-  end
+  # The vendored xcframework is a compile-time stub. The real UnityFramework
+  # is provided at app integration time by `flunity bundle ios` (which copies
+  # the user's actual Unity-built framework into the consuming Flutter app's
+  # ios/Frameworks tree and re-links).
+  s.vendored_frameworks = framework_path
 end

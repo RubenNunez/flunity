@@ -8,7 +8,6 @@ import 'package:path/path.dart' as p;
 /// plausible for the active target.
 ///
 /// Target-specific signal files:
-///   - webgl   → index.html (and the `flunity:patch` marker once prepared).
 ///   - ios     → Unity-iPhone.xcodeproj/project.pbxproj.
 ///   - android → build.gradle at the export root.
 class UnityBuildCheck implements Check {
@@ -21,27 +20,9 @@ class UnityBuildCheck implements Check {
   @override
   Future<CheckResult> run() async {
     return switch (project.target) {
-      FlunityTarget.webgl => _runWebGL(),
       FlunityTarget.ios => _runIos(),
       FlunityTarget.android => _runAndroid(),
     };
-  }
-
-  Future<CheckResult> _runWebGL() async {
-    final indexHtml = File(p.join(project.buildDir, 'index.html'));
-    if (!indexHtml.existsSync()) {
-      return CheckResult.warn(
-        'No build at ${project.buildDir}/index.html',
-        hint: 'Build WebGL from Unity into ${project.buildDir}/.',
-      );
-    }
-    final content = indexHtml.readAsStringSync();
-    if (!content.contains('flunity:patch')) {
-      return CheckResult.ok(
-        'Found at ${indexHtml.path} (will auto-prepare on `flunity webgl serve`)',
-      );
-    }
-    return CheckResult.ok('Found at ${indexHtml.path} (prepared)');
   }
 
   Future<CheckResult> _runIos() async {

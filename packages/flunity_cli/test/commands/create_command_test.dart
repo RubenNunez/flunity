@@ -16,17 +16,17 @@ void main() {
     final fakeTemplateRoot = Directory(p.join(tmp.path, 'templates'))
       ..createSync();
     final fakeBasic = Directory(
-      p.join(fakeTemplateRoot.path, 'flutter_webgl_basic'),
+      p.join(fakeTemplateRoot.path, 'flutter_native_basic'),
     )..createSync();
     File(
       p.join(fakeBasic.path, 'flunity.yaml'),
-    ).writeAsStringSync('# basic\nname: __app_name__\ntarget: webgl\n');
+    ).writeAsStringSync('# basic\nname: __app_name__\ntarget: ios\n');
     final fakeBridge = Directory(
-      p.join(fakeTemplateRoot.path, 'flutter_webgl_bridge'),
+      p.join(fakeTemplateRoot.path, 'flutter_native_bridge'),
     )..createSync();
     File(
       p.join(fakeBridge.path, 'flunity.yaml'),
-    ).writeAsStringSync('# bridge\nname: __app_name__\ntarget: webgl\n');
+    ).writeAsStringSync('# bridge\nname: __app_name__\ntarget: ios\n');
 
     final runner = CommandRunner<int>('flunity', 'test')
       ..addCommand(
@@ -55,13 +55,13 @@ void main() {
     final fakeTemplateRoot = Directory(p.join(tmp.path, 'templates'))
       ..createSync();
     final fakeBasic = Directory(
-      p.join(fakeTemplateRoot.path, 'flutter_webgl_basic'),
+      p.join(fakeTemplateRoot.path, 'flutter_native_basic'),
     )..createSync();
     File(
       p.join(fakeBasic.path, 'flunity.yaml'),
-    ).writeAsStringSync('# basic\nname: __app_name__\ntarget: webgl\n');
+    ).writeAsStringSync('# basic\nname: __app_name__\ntarget: ios\n');
     Directory(
-      p.join(fakeTemplateRoot.path, 'flutter_webgl_bridge'),
+      p.join(fakeTemplateRoot.path, 'flutter_native_bridge'),
     ).createSync();
 
     final runner = CommandRunner<int>('flunity', 'test')
@@ -91,10 +91,10 @@ void main() {
     final fakeTemplateRoot = Directory(p.join(tmp.path, 'templates'))
       ..createSync();
     Directory(
-      p.join(fakeTemplateRoot.path, 'flutter_webgl_basic'),
+      p.join(fakeTemplateRoot.path, 'flutter_native_basic'),
     ).createSync();
     Directory(
-      p.join(fakeTemplateRoot.path, 'flutter_webgl_bridge'),
+      p.join(fakeTemplateRoot.path, 'flutter_native_bridge'),
     ).createSync();
     Directory(p.join(tmp.path, 'taken')).createSync();
 
@@ -120,10 +120,10 @@ void main() {
     final fakeTemplateRoot = Directory(p.join(tmp.path, 'templates'))
       ..createSync();
     Directory(
-      p.join(fakeTemplateRoot.path, 'flutter_webgl_basic'),
+      p.join(fakeTemplateRoot.path, 'flutter_native_basic'),
     ).createSync();
     Directory(
-      p.join(fakeTemplateRoot.path, 'flutter_webgl_bridge'),
+      p.join(fakeTemplateRoot.path, 'flutter_native_bridge'),
     ).createSync();
     final runner = CommandRunner<int>('flunity', 'test')
       ..addCommand(
@@ -145,10 +145,10 @@ void main() {
     final fakeTemplateRoot = Directory(p.join(tmp.path, 'templates'))
       ..createSync();
     Directory(
-      p.join(fakeTemplateRoot.path, 'flutter_webgl_basic'),
+      p.join(fakeTemplateRoot.path, 'flutter_native_basic'),
     ).createSync();
     Directory(
-      p.join(fakeTemplateRoot.path, 'flutter_webgl_bridge'),
+      p.join(fakeTemplateRoot.path, 'flutter_native_bridge'),
     ).createSync();
     final runner = CommandRunner<int>('flunity', 'test')
       ..addCommand(

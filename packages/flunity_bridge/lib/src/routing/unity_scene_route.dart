@@ -9,13 +9,13 @@ import 'package:flutter/widgets.dart';
 /// Route-scoped helper that loads a Unity scene when its subtree mounts and
 /// (optionally) restores a previous scene when it unmounts. Useful for
 /// "one Unity instance, many Flutter routes" — mount [FlunityNativeView]
-/// or [FlunityWebGLView] once at the app shell, then wrap each route's
+/// once at the app shell, then wrap each route's
 /// content in `UnitySceneRoute(scene: 'menu', send: ...)`.
 ///
 /// The widget is transport-agnostic: it only needs a `send(FlunityMessage)`
 /// callback. For convenience, [UnitySceneRoute.native] wires that to the
 /// top-level [native.sendToUnity] helper and the canonical `[FlunityBridge]`
-/// GameObject. If you're on WebGL or a custom transport, pass [send]
+/// GameObject. If you're on a custom transport, pass [send]
 /// directly so the route can route through your own controller.
 class UnitySceneRoute extends StatefulWidget {
   const UnitySceneRoute({

@@ -3,8 +3,8 @@ package com.flunity.bridge.unity
 /**
  * Whether the Unity-as-a-Library classes are in this APK at all.
  *
- * They are not in the "WebGL-in-a-WebView" setup — the Flutter app renders the
- * Unity WebGL player instead of embedding the native library (see the setup
+ * They are not in a build without the Unity export — CI and fresh clones
+ * build the app UI-only, without the native library (see the setup
  * matrix in the jellx docs). In that build `unityLibrary` is absent, and any
  * code that so much as resolves `com.unity3d.player.*` throws
  * `NoClassDefFoundError`. If that happens while the plugin is being constructed

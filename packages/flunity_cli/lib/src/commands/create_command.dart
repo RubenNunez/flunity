@@ -2,8 +2,6 @@ import 'dart:io';
 import 'dart:isolate';
 
 import 'package:args/command_runner.dart';
-import 'package:flunity_cli/src/platform/android_cleartext_patcher.dart';
-import 'package:flunity_cli/src/platform/ios_ats_patcher.dart';
 import 'package:flunity_cli/src/templates/template_renderer.dart';
 import 'package:flunity_cli/src/templates/template_vars.dart';
 import 'package:flunity_cli/src/utils/process_runner.dart';
@@ -26,9 +24,9 @@ class CreateCommand extends Command<int> {
     argParser
       ..addOption(
         'target',
-        defaultsTo: 'webgl',
-        allowed: ['webgl', 'ios', 'android'],
-        help: 'Target platform: webgl | ios | android.',
+        defaultsTo: 'ios',
+        allowed: ['ios', 'android'],
+        help: 'Target platform: ios | android.',
       )
       ..addOption(
         'org',
@@ -79,13 +77,9 @@ class CreateCommand extends Command<int> {
     final target = argResults!['target'] as String;
     final noBridge = argResults!['no-bridge'] == true;
 
-    final templateName = switch ((target, noBridge)) {
-      ('webgl', true) => 'flutter_webgl_basic',
-      ('webgl', false) => 'flutter_webgl_bridge',
-      ('ios', true) || ('android', true) => 'flutter_native_basic',
-      ('ios', false) || ('android', false) => 'flutter_native_bridge',
-      _ => throw StateError('Unreachable: target=$target noBridge=$noBridge'),
-    };
+    final templateName = noBridge
+        ? 'flutter_native_basic'
+        : 'flutter_native_bridge';
 
     final templateRoot = await _resolveTemplateRoot();
     if (templateRoot == null) {
@@ -151,10 +145,8 @@ dependency_overrides:
         );
       }
 
-      // Step 2: flutter create (generates ios/, android/, etc.). For webgl
-      // targets we include macos so the same scaffold can run on desktop;
-      // for native targets we keep it lean to ios+android only.
-      final platforms = target == 'webgl' ? 'ios,android,macos' : 'ios,android';
+      // Step 2: flutter create (generates ios/, android/, etc.).
+      const platforms = 'ios,android';
       _logger.info('');
       final flutterCreate = _logger.progress(
         'Generating platform projects via flutter create',
@@ -177,20 +169,7 @@ dependency_overrides:
         return 70;
       }
 
-      // Step 3: iOS ATS + Android cleartext patchers (webgl only — native
-      // bridges don't load assets over HTTP, so cleartext exemptions aren't
-      // needed). Skipping the patchers on native keeps the manifests clean.
-      if (target == 'webgl') {
-        IosAtsPatcher.patch(
-          p.join(flutterAppDir, 'ios', 'Runner', 'Info.plist'),
-        );
-        AndroidCleartextPatcher.patch(
-          androidAppDir: p.join(flutterAppDir, 'android', 'app'),
-        );
-      }
-
-      // Step 4: flutter pub get to refresh after the patchers (no-op if
-      // nothing changed, but Android manifest changes can affect pub).
+      // Step 3: flutter pub get.
       final pubGet = _logger.progress('flutter pub get');
       try {
         await runOrThrow(_flutterExe, [
@@ -210,16 +189,7 @@ dependency_overrides:
       ..success('Created $appName/. Next steps:')
       ..info('  1. cd $appName')
       ..info('  2. flunity doctor                       # verify environment');
-    if (target == 'webgl') {
-      _logger
-        ..info(
-          '  3. open unity_project/ in Unity, build WebGL → unity_project/Builds/webgl/',
-        )
-        ..info('  4. flunity webgl serve                  # start dev server')
-        ..info(
-          '  5. cd flutter_app && flutter run --dart-define=FLUNITY_MODE=dev',
-        );
-    } else {
+    {
       _logger
         ..info(
           '  3. open unity_project/ in Unity 6 with $target Build Support installed',
@@ -236,7 +206,7 @@ dependency_overrides:
   }
 
   /// Rewrites the rendered `flunity.yaml`'s `target:` field so it matches
-  /// the CLI flag. Templates ship with sensible defaults (webgl/ios), but
+  /// the CLI flag. Templates ship with a sensible default, but
   /// when the user passes `--target android` we want the manifest to record
   /// android, not the template default.
   static void _overwriteManifestTarget(String manifestPath, String target) {
@@ -261,7 +231,7 @@ dependency_overrides:
   /// We try two strategies in order:
   /// 1. `Isolate.resolvePackageUri` — works under `dart run` in JIT mode.
   /// 2. Walk upward from `Platform.script` until we find a directory that
-  ///    contains `templates/flutter_webgl_basic/`. This is robust against
+  ///    contains `templates/flutter_native_basic/`. This is robust against
   ///    AOT snapshots produced by `pub global activate`, where the script
   ///    lives several directories below the package root.
   Future<String?> _resolveTemplateRoot() async {
@@ -286,10 +256,9 @@ dependency_overrides:
       // Any template directory under `templates/` confirms we've found the
       // package root.
       final templatesDir = p.join(dir.path, 'templates');
-      if (Directory(p.join(templatesDir, 'flutter_webgl_basic')).existsSync() ||
-          Directory(
-            p.join(templatesDir, 'flutter_native_basic'),
-          ).existsSync()) {
+      if (Directory(
+        p.join(templatesDir, 'flutter_native_basic'),
+      ).existsSync()) {
         return templatesDir;
       }
       final parent = dir.parent;

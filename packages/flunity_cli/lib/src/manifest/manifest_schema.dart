@@ -27,11 +27,10 @@ FlunityProject parseManifest(String manifestPath) {
   final version = _optionalString(doc, 'version') ?? '0.1.0';
   final targetStr = _requireString(doc, 'target');
   final target = switch (targetStr) {
-    'webgl' => FlunityTarget.webgl,
     'ios' => FlunityTarget.ios,
     'android' => FlunityTarget.android,
     _ => throw ManifestException(
-      'Unknown target "$targetStr" — valid values: webgl, ios, android.',
+      'Unknown target "$targetStr" — valid values: ios, android.',
     ),
   };
 
@@ -55,29 +54,9 @@ FlunityProject parseManifest(String manifestPath) {
       'unity_builds',
       'unity_project/Builds',
     ),
-    flutterAssets: _resolvePath(
-      rootDir,
-      pathsMap,
-      'flutter_assets',
-      'flutter_app/assets/unity_webgl',
-    ),
     unityBuildOverride: hasLegacyUnityBuild
         ? _resolvePath(rootDir, pathsMap, 'unity_build', '')
         : null,
-  );
-
-  final webglMap = doc['webgl'] as YamlMap?;
-  final devServerMap = webglMap?['dev_server'] as YamlMap?;
-  final webgl = FlunityWebGLSettings(
-    devServer: FlunityDevServerSettings(
-      host: (devServerMap?['host'] as String?) ?? '127.0.0.1',
-      port: (devServerMap?['port'] as int?) ?? 8080,
-      crossOriginIsolation:
-          (devServerMap?['cross_origin_isolation'] as bool?) ?? true,
-      hotReload: (devServerMap?['hot_reload'] as bool?) ?? false,
-    ),
-    androidEmulatorHost:
-        (webglMap?['android_emulator_host'] as String?) ?? '10.0.2.2',
   );
 
   final bridgeMap = doc['bridge'] as YamlMap?;
@@ -97,7 +76,6 @@ FlunityProject parseManifest(String manifestPath) {
     version: version,
     target: target,
     paths: paths,
-    webgl: webgl,
     bridge: bridge,
   );
 }

@@ -39,7 +39,7 @@ class FlunityBridgeAndroidPlugin : FlutterPlugin, ActivityAware {
     // Messages from Flutter to this plugin will be sent to Unity via this:
     // Declared by interface and created lazily: this class must never resolve
     // a Unity type while GeneratedPluginRegistrant constructs it. Without the
-    // Unity library in the APK (WebGL-in-a-WebView builds) that threw
+    // Unity library in the APK (a build without the Unity export) that threw
     // NoClassDefFoundError and took every other plugin down with it.
     private val methodCallHandler: MethodChannel.MethodCallHandler by lazy {
         if (UnityAvailability.present) SendToUnity() else NoUnityHandler()

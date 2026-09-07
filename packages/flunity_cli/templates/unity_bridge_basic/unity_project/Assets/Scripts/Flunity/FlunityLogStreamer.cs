@@ -55,14 +55,14 @@ namespace Flunity {
         void OnLog(string condition, string stackTrace, LogType type) {
             // No Flutter side in the Editor — forwarding `flunity_log` only
             // creates noise, and on platforms where SendRaw falls back to
-            // Debug.Log (everywhere except Webgl / iOS / Android player
+            // Debug.Log (everywhere except the iOS / Android player
             // builds) it triggers a feedback loop: our SendRaw emits a
             // Debug.Log, which fires this callback, which sends again, ...
             if (Application.isEditor) return;
 
             // Defensive filter: never forward FlunityBridge's own internal
             // diagnostics. Currently this fires only for the "(no-op outside
-            // WebGL/iOS/Android)" fallback, but a strict prefix match keeps
+            // iOS/Android)" fallback, but a strict prefix match keeps
             // the streamer recursion-proof against future bridge-side logs.
             if (condition != null && condition.StartsWith("[FlunityBridge] ")) return;
 

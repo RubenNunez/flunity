@@ -35,16 +35,6 @@ void main() {
         flutterApp: flutterApp.path,
         unityProject: unityProject.path,
         unityBuilds: p.join(unityProject.path, 'Builds'),
-        flutterAssets: p.join(flutterApp.path, 'assets', 'unity_webgl'),
-      ),
-      webgl: FlunityWebGLSettings(
-        devServer: FlunityDevServerSettings(
-          host: '127.0.0.1',
-          port: 8080,
-          crossOriginIsolation: true,
-          hotReload: false,
-        ),
-        androidEmulatorHost: '10.0.2.2',
       ),
       bridge: FlunityBridgeSettings(enabled: true, messages: const []),
     );
