@@ -4,17 +4,12 @@ import 'package:args/command_runner.dart';
 import 'package:flunity_cli/src/manifest/flunity_project.dart';
 import 'package:flunity_cli/src/manifest/manifest_finder.dart';
 import 'package:flunity_cli/src/native/bundle_native.dart';
-import 'package:flunity_cli/src/webgl/prepare_webgl.dart';
-import 'package:flunity_cli/src/webgl/webgl_copy.dart';
 import 'package:mason_logger/mason_logger.dart';
-import 'package:path/path.dart' as p;
 
 /// `flunity bundle <target>` — copies the Unity build artifact into the
 /// Flutter app where it can be picked up by `flutter run` / `flutter build`.
 ///
 /// Per-target behaviour:
-///   - webgl   → copies `Builds/webgl/` into `flutter_app/assets/unity_webgl/`
-///               (delegates to the existing `webgl copy` flow).
 ///   - ios     → copies `Builds/ios/` into `flutter_app/ios/UnityExport/`,
 ///               prints next-step instructions for Xcode wiring.
 ///   - android → copies `Builds/android/` into `flutter_app/android/unityLibrary/`
@@ -50,47 +45,9 @@ class BundleCommand extends Command<int> {
     // Read from the requested target's directory, not the manifest default.
     final buildDir = project.buildDirFor(target);
     return switch (target) {
-      FlunityTarget.webgl => _bundleWebGL(project, buildDir),
       FlunityTarget.ios => _bundleIos(project, buildDir),
       FlunityTarget.android => _bundleAndroid(project, buildDir),
     };
-  }
-
-  Future<int> _bundleWebGL(FlunityProject project, String buildDir) async {
-    final indexHtml = File(p.join(buildDir, 'index.html'));
-    if (!indexHtml.existsSync()) {
-      _logger.err(
-        'No Unity WebGL build at ${indexHtml.path} — build WebGL first.',
-      );
-      return 1;
-    }
-    try {
-      await prepareWebGLBuild(
-        buildDir: buildDir,
-        shimSourcePath: p.join(
-          project.paths.unityProject,
-          'Assets',
-          'Plugins',
-          'WebGL',
-          'flunity_bridge.js',
-        ),
-      );
-    } on PrepareWebGLException catch (e) {
-      _logger.err(e.message);
-      return 1;
-    }
-    try {
-      final summary = await copyWebGLBuild(project: project, clean: false);
-      _logger
-        ..success(
-          'Copied ${summary.fileCount} files (${summary.totalBytes} bytes) → ${summary.destination}',
-        )
-        ..info('Build hash: ${summary.buildHash}');
-      return 0;
-    } on WebGLCopyException catch (e) {
-      _logger.err(e.message);
-      return 1;
-    }
   }
 
   Future<int> _bundleIos(FlunityProject project, String buildDir) async {
@@ -139,13 +96,10 @@ class BundleCommand extends Command<int> {
       return null;
     }
     return switch (rest.first) {
-      'webgl' => FlunityTarget.webgl,
       'ios' => FlunityTarget.ios,
       'android' => FlunityTarget.android,
       _ => () {
-        _logger.err(
-          'Unknown target "${rest.first}". Valid: webgl, ios, android.',
-        );
+        _logger.err('Unknown target "${rest.first}". Valid: ios, android.');
         return null;
       }(),
     };

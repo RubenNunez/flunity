@@ -33,13 +33,12 @@ class FlunityOutletTimeoutException implements Exception {
 }
 
 /// Thrown when [FlunityInvoker] is used with no Unity transport available:
-/// on WebGL before a [FlunityWebGLController] (view) is mounted, or on an
+/// before a [MessageTransport] is attached, or on an
 /// unsupported platform (desktop / web without Unity).
 class FlunityNotAttachedException implements Exception {
   @override
   String toString() =>
-      'FlunityNotAttachedException: no Unity bridge is attached. On WebGL, '
-      'mount a FlunityWebGLView (or UnitySceneRoute) before calling outlets; '
+      'FlunityNotAttachedException: no Unity bridge is attached. '
       'on iOS / Android the native bridge attaches automatically. Outlets are '
       'unavailable on desktop / web targets without a Unity view.';
 }
@@ -123,9 +122,9 @@ class FlunityInvoker {
   MessageTransport? _webTransport;
   StreamSubscription<String>? _webSub;
 
-  /// Bind a WebGL [MessageTransport] so `invoke`/`find` route over it.
+  /// Bind a custom [MessageTransport] so `invoke`/`find` route over it.
   ///
-  /// Called automatically by [FlunityWebGLController]; you rarely call this
+  /// For hosts with their own transport; you rarely call this
   /// directly. A single transport is active at a time (matching the
   /// one-Unity-instance assumption of the native path) — attaching a new one
   /// replaces and tears down the previous binding.
@@ -137,7 +136,7 @@ class FlunityInvoker {
   }
 
   /// Unbind [transport] if it is the currently-attached one; otherwise a no-op.
-  /// Called automatically by [FlunityWebGLController.dispose].
+  /// The counterpart of [attachTransport].
   void detachWebTransport(MessageTransport transport) {
     if (!identical(_webTransport, transport)) return;
     _webSub?.cancel();
@@ -217,7 +216,7 @@ class FlunityInvoker {
   /// Starts the reply clock for [nonce].
   ///
   /// Deliberately called only after the transport reports the envelope
-  /// delivered. The WebGL transport parks sends until Unity's JS shim is
+  /// delivered. A transport may park sends until Unity's side is
   /// ready, so arming at call time charged the caller's budget for Unity's
   /// boot — a call issued on the first frame always expired, and the genuine
   /// reply then arrived with no pending entry to match.

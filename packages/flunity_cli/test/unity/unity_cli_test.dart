@@ -142,7 +142,7 @@ void main() {
       );
 
       final result = await cli.runMenu(
-        'Flunity/Build/WebGL (Dev)',
+        'Flunity/Build/iOS (Device)',
         projectPath: '/proj/unity_project',
         timeout: const Duration(minutes: 30),
       );
@@ -153,7 +153,7 @@ void main() {
         'cmd',
         'menu',
         '--path',
-        'Flunity/Build/WebGL (Dev)',
+        'Flunity/Build/iOS (Device)',
         '--project-path',
         '/proj/unity_project',
         '--json',
@@ -198,7 +198,7 @@ void main() {
             0,
             0,
             '{"success": true, "data": {"result": '
-                '{"activeBuildTarget": "WebGL"}}}',
+                '{"activeBuildTarget": "iOS"}}}',
             '',
           );
         },
@@ -209,7 +209,7 @@ void main() {
       ], projectPath: '/proj');
 
       expect(result.success, isTrue);
-      expect((result.result as Map)['activeBuildTarget'], 'WebGL');
+      expect((result.result as Map)['activeBuildTarget'], 'iOS');
     });
 
     test(

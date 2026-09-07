@@ -4,14 +4,14 @@
 
 **Status: pre-alpha.** Under active development. Public API may change without notice until `0.1.0`.
 
-Flunity is a development companion for Flutter + Unity projects. It supports three Unity build targets — **WebGL** (loaded inside an in-process WebView), **iOS** (UnityFramework.xcframework embedded into the Flutter Runner), and **Android** (`unityLibrary` Gradle module included from the Flutter Android scaffold). Pick a target with `flunity create --target webgl|ios|android`. See [`docs/target-comparison.md`](docs/target-comparison.md) for an honest tradeoff comparison.
+Flunity is a development companion for Flutter + Unity projects. It embeds Unity natively — **iOS** (UnityFramework.xcframework embedded into the Flutter Runner) and **Android** (`unityLibrary` Gradle module included from the Flutter Android scaffold). Pick a target with `flunity create --target ios|android`. (WebGL-in-a-WebView support existed through 2026-09-07 and was removed — git history has it.)
 
 ## Packages
 
 | Package | Description |
 | --- | --- |
 | [`flunity_cli`](packages/flunity_cli) | The `flunity` executable: scaffolding, dev server, asset bundling, bridge init. |
-| [`flunity_bridge`](packages/flunity_bridge) | Flutter package: `FlunityWebGLView`, `FlunityNativeView`, message types, dev/bundled config, `UnitySceneRoute` helper. |
+| [`flunity_bridge`](packages/flunity_bridge) | Flutter package: `FlunityNativeView`, message types, the outlet invoker, `UnitySceneRoute` helper. |
 
 ## How to
 
@@ -56,33 +56,13 @@ This checks Flutter SDK, Dart SDK, the manifest, your Unity project layout, and 
 
 Open `my_app/unity_project/` in Unity 6 (6000.x).
 
-For WebGL: build the WebGL target into `unity_project/Builds/webgl/` (or use **Flunity → Build → WebGL** from the Unity menu).
+Run `flunity build ios` (or `flunity build android`). If the project is open in the Editor, Flunity drives *that* Editor through the Unity CLI (much faster warm); otherwise it runs Unity in batch mode with the bundled exporter. Never quit the Editor for a build.
 
-For iOS / Android: run `flunity build ios` (or `flunity build android`). If the project is open in the Editor, Flunity drives *that* Editor through the Unity CLI (much faster warm); otherwise it runs Unity in batch mode with the bundled exporter. Never quit the Editor for a build.
-
-No Unity Android export at hand? The Flutter app still builds and runs with the WebGL player in a WebView: make the `:unityLibrary` Gradle include conditional on the directory existing and run with `--dart-define=FLUNITY_FORCE_WEBGL=true`. The Android plugin detects the missing Unity library at runtime and answers Unity calls with `unity_unavailable` instead of crashing plugin registration.
+No Unity Android export at hand? The Flutter app still builds UI-only when the `:unityLibrary` Gradle include is conditional on the directory existing — the Android plugin detects the missing Unity library at runtime and answers Unity calls with `unity_unavailable` instead of crashing plugin registration.
 
 ### 5. Run the dev loop
 
-**WebGL.** In one terminal:
-
-```bash
-flunity webgl serve
-# Serving http://127.0.0.1:8080/
-```
-
-In a second terminal:
-
-```bash
-cd flutter_app
-flutter run --dart-define=FLUNITY_MODE=dev
-```
-
-The Flutter app boots, loads `http://127.0.0.1:8080/index.html` in a WebView, and the Unity scene renders inside Flutter. Iterate by rebuilding Unity → reloading the Flutter app.
-
-> **Android emulator:** `127.0.0.1` from inside the emulator points to the emulator, not your host. Flunity automatically swaps it for `10.0.2.2`. No action needed.
-
-**iOS / Android.** Bundle the build into the Flutter app, then run:
+Bundle the build into the Flutter app, then run:
 
 ```bash
 flunity build ios && flunity bundle ios
@@ -109,23 +89,11 @@ public class Pet : MonoBehaviour {
 final ok = await flunity.invoke<bool>('Pet.Feed', args: {'amount': 10});
 ```
 
-The Future stays pending until Unity finishes the work — easy round-trip UX (disable buttons while busy, show progress, etc). See [docs/outlets.md](docs/outlets.md) for the full API. Outlets work on iOS, Android, and WebGL — the same typed API on every target.
+The Future stays pending until Unity finishes the work — easy round-trip UX (disable buttons while busy, show progress, etc). See [docs/outlets.md](docs/outlets.md) for the full API. Outlets work on iOS and Android — the same typed API on both targets.
 
 For Unity → Flutter (or stream-style messaging), see [docs/bridge-api.md](docs/bridge-api.md). Built-in tools: a Logs sheet streams both sides into one buffer, and an Inspector tab lets you query the Unity scene (`tree`, `find`, `call`) from a typed terminal — see [docs/debugging.md](docs/debugging.md).
 
 ### 7. Build for production
-
-For WebGL:
-
-```bash
-flunity webgl copy
-cd flutter_app
-flutter build apk     # or appbundle, ipa, etc.
-```
-
-`flunity webgl copy` packages the Unity build into `flutter_app/assets/unity_webgl/`. Bundled mode is the Flutter default; the production app loads Unity from inside the asset bundle via a process-local HTTP loopback (Unity WebGL refuses to load via `file://`).
-
-For iOS / Android:
 
 ```bash
 flunity build <target>
@@ -138,7 +106,7 @@ flutter build ipa     # or appbundle
 
 ## Documentation
 
-See [`docs/`](docs/) — [getting-started](docs/getting-started.md), [project-structure](docs/project-structure.md), [target-comparison](docs/target-comparison.md), [multi-target builds](docs/multi-target.md), [WebGL workflow](docs/webgl-workflow.md), [native setup](docs/native-setup.md), [scene routing](docs/scene-routing.md), [bridge API](docs/bridge-api.md), [production build](docs/production-build.md), [Android emulator notes](docs/android-emulator.md).
+See [`docs/`](docs/) — [getting-started](docs/getting-started.md), [project-structure](docs/project-structure.md), [multi-target builds](docs/multi-target.md), [native setup](docs/native-setup.md), [scene routing](docs/scene-routing.md), [bridge API](docs/bridge-api.md).
 
 ## License
 

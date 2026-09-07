@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### Removed (2026-09-07)
+
+- `flunity webgl serve|copy|clean`, `flunity bridge init`, the WebGL build
+  target (`flunity build webgl`, `--release`), the WebGL doctor checks, the
+  `webgl:`/`flutter_assets:` manifest keys, and the `flutter_webgl_*`
+  templates. `flunity create` now defaults to `--target ios`.
+
 ### Initial
 
 - `flunity` executable. Commands: `create`, `doctor`, `bridge init`, `webgl serve|copy|clean|prepare`.

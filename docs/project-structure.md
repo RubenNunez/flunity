@@ -16,49 +16,35 @@ The manifest is the single source of truth for project metadata and paths. Every
 ```yaml
 name: hello_unity
 version: 0.1.0
-target: webgl
+target: ios
 
 paths:
   flutter_app: flutter_app
   unity_project: unity_project
-  unity_build: unity_project/Builds/WebGL
-  flutter_assets: flutter_app/assets/unity_webgl
-
-webgl:
-  dev_server:
-    host: 127.0.0.1
-    port: 8080
-    cross_origin_isolation: true
-    hot_reload: false
-  android_emulator_host: 10.0.2.2
+  unity_builds: unity_project/Builds
 
 bridge:
   enabled: true
   messages: []
 ```
 
-Edit any path, port, or host as needed. The CLI honors the manifest values; flags like `--port` override per-invocation.
+Edit any path as needed. The CLI honors the manifest values.
 
 ## `flutter_app/`
 
 A normal Flutter app, with two opinions baked in:
 
 - It depends on `flunity_bridge` and imports it in `main.dart`.
-- `lib/unity/` contains the WebView screen, a typed wrapper, and the dev/bundled config switch.
+- `lib/unity/` contains the Unity screen and a typed wrapper.
 
 ```
 flutter_app/
-├── pubspec.yaml          # declares assets/unity_webgl/ and flunity_bridge dep
+├── pubspec.yaml          # declares the flunity_bridge dep
 ├── lib/
 │   ├── main.dart         # registerBuiltInMessages() + runApp(...)
-│   └── unity/
-│       ├── unity_webgl_screen.dart
-│       ├── unity_webgl_bridge.dart
-│       └── unity_webgl_config.dart
-├── android/              # cleartext exception scoped to 10.0.2.2 + 127.0.0.1
-├── ios/                  # ATS exception scoped to 127.0.0.1 + localhost
-└── assets/
-    └── unity_webgl/      # populated by `flunity webgl copy`
+│   └── unity/            # native Unity screen + typed bridge wrapper
+├── android/              # unityLibrary module included after `flunity bundle android`
+└── ios/                  # Unity-iPhone sub-project wired after `flunity bundle ios`
 ```
 
 ## `unity_project/`
@@ -71,16 +57,10 @@ unity_project/
     ├── Scripts/
     │   ├── FlunityBridge.cs        # static API for game code
     │   └── FlunityBridgeDemo.cs    # listens for load_scene, replies with scene_ready
-    └── Plugins/WebGL/
-        ├── flunity_bridge.jslib    # extern "C" hook into the JS shim
-        └── flunity_bridge.js       # included in the WebGL build
+    └── Editor/Flunity/             # vendored export scripts (FlunityBatchmode, FlunityMenu)
 ```
 
-After Unity builds the WebGL target into `unity_project/Builds/WebGL/`, the build is served by `flunity webgl serve` (dev) or copied into `flutter_app/assets/unity_webgl/` by `flunity webgl copy` (production).
-
-## Scripts
-
-`scripts/serve_unity_webgl.sh` and `scripts/copy_unity_webgl_to_flutter_assets.sh` are 3-line wrappers around `flunity webgl serve` and `flunity webgl copy`. They exist for muscle memory and IDE task runners.
+After Unity exports a target into `unity_project/Builds/<target>/`, `flunity bundle <target>` copies it into the Flutter app.
 
 ## What Flunity does NOT generate
 

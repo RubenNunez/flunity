@@ -185,7 +185,7 @@ class UnityCli {
     return result.success;
   }
 
-  /// Executes an Editor menu item by path (e.g. `Flunity/Build/WebGL (Dev)`)
+  /// Executes an Editor menu item by path (e.g. `Flunity/Build/iOS (Device)`)
   /// on the connected Editor for [projectPath].
   ///
   /// The pipeline `menu` command blocks until the menu method itself

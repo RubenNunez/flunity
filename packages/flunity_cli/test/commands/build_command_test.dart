@@ -44,7 +44,7 @@ void main() {
     tmp.deleteSync(recursive: true);
   });
 
-  void writeManifest({String target = 'webgl'}) {
+  void writeManifest({String target = 'android'}) {
     File(p.join(tmp.path, 'flunity.yaml')).writeAsStringSync('''
 name: my_app
 version: 0.1.0
@@ -53,14 +53,6 @@ paths:
   flutter_app: flutter_app
   unity_project: unity_project
   unity_builds: unity_project/Builds
-  flutter_assets: flutter_app/assets/unity_webgl
-webgl:
-  dev_server:
-    host: 127.0.0.1
-    port: 8080
-    cross_origin_isolation: true
-    hot_reload: false
-  android_emulator_host: 10.0.2.2
 bridge:
   enabled: true
   messages: []
@@ -104,7 +96,7 @@ bridge:
   group('unlocked project', () {
     test('uses batch mode and never probes the connected Editor', () async {
       writeManifest();
-      final code = await run(['webgl', '--unity', fakeUnityBinary]);
+      final code = await run(['android', '--unity', fakeUnityBinary]);
       // The fake "Unity" binary exits 0 without producing a build artifact,
       // so we expect the batch-mode branch to run to completion and then
       // fail the artifact check — proving batch mode (not the connected
@@ -117,7 +109,12 @@ bridge:
     test('forces batch mode even when the project is locked', () async {
       writeManifest();
       lockProject();
-      final code = await run(['webgl', '--unity', fakeUnityBinary, '--batch']);
+      final code = await run([
+        'android',
+        '--unity',
+        fakeUnityBinary,
+        '--batch',
+      ]);
       expect(code, 1); // fake binary → batch path → empty artifact
     });
   });
@@ -132,14 +129,14 @@ bridge:
         processRunner: (exe, args, {workingDirectory}) =>
             throw StateError('should never spawn a process'),
       );
-      final code = await run(['webgl'], unityCli: unityCli);
+      final code = await run(['android'], unityCli: unityCli);
       expect(code, 70);
     });
   });
 
   group('locked, Unity CLI available, Editor connected', () {
-    test('webgl drives the connected Editor via its menu item', () async {
-      writeManifest();
+    test('ios drives the connected Editor via its menu item', () async {
+      writeManifest(target: 'ios');
       lockProject();
       final calls = <List<String>>[];
       final unityCli = UnityCli(
@@ -150,11 +147,20 @@ bridge:
           if (args.contains('editor_status')) {
             return ProcessResult(0, 0, '{"success": true}', '');
           }
+          if (args.contains('get_build_settings')) {
+            return ProcessResult(
+              0,
+              0,
+              '{"success": true, "data": {"result": '
+                  '{"activeBuildTarget": "iOS"}}}',
+              '',
+            );
+          }
           if (args.contains('menu')) {
             // Simulate the build artifact the real Unity menu item would
             // have produced.
             File(
-              p.join(unityProjectDir.path, 'Builds', 'webgl', 'index.html'),
+              p.join(unityProjectDir.path, 'Builds', 'ios', 'Info.plist'),
             ).createSync(recursive: true);
             return ProcessResult(0, 0, '{"success": true}', '');
           }
@@ -162,44 +168,13 @@ bridge:
         },
       );
 
-      final code = await run(['webgl'], unityCli: unityCli);
+      final code = await run(['ios'], unityCli: unityCli);
 
       expect(code, 0);
       expect(
         calls.any(
-          (a) => a.contains('menu') && a.contains('Flunity/Build/WebGL (Dev)'),
+          (a) => a.contains('menu') && a.contains('Flunity/Build/iOS (Device)'),
         ),
-        isTrue,
-      );
-      // WebGL's own builder switches target itself with no dialog risk, so
-      // we must not have spent a round trip on get_build_settings for it.
-      expect(calls.any((a) => a.contains('get_build_settings')), isFalse);
-    });
-
-    test('webgl --release uses the Release menu item', () async {
-      writeManifest();
-      lockProject();
-      final calls = <List<String>>[];
-      final unityCli = UnityCli(
-        env: const {'UNITY_CLI_PATH': '/fake/unity'},
-        fileExists: (_) => true,
-        processRunner: (exe, args, {workingDirectory}) async {
-          calls.add(args);
-          if (args.contains('editor_status')) {
-            return ProcessResult(0, 0, '{"success": true}', '');
-          }
-          File(
-            p.join(unityProjectDir.path, 'Builds', 'webgl', 'index.html'),
-          ).createSync(recursive: true);
-          return ProcessResult(0, 0, '{"success": true}', '');
-        },
-      );
-
-      final code = await run(['webgl', '--release'], unityCli: unityCli);
-
-      expect(code, 0);
-      expect(
-        calls.any((a) => a.contains('Flunity/Build/WebGL (Release)')),
         isTrue,
       );
     });
@@ -223,7 +198,7 @@ bridge:
                 0,
                 0,
                 '{"success": true, "data": {"result": '
-                    '{"activeBuildTarget": "WebGL"}}}',
+                    '{"activeBuildTarget": "Android"}}}',
                 '',
               );
             }
@@ -381,7 +356,7 @@ bridge:
       );
 
       final code = await run([
-        'webgl',
+        'android',
         '--unity',
         fakeUnityBinary,
       ], unityCli: unityCli);
@@ -398,13 +373,7 @@ bridge:
   group('argument validation', () {
     test('--simulator is rejected outside ios', () async {
       writeManifest();
-      final code = await run(['webgl', '--simulator']);
-      expect(code, 64);
-    });
-
-    test('--release is rejected outside webgl', () async {
-      writeManifest(target: 'ios');
-      final code = await run(['ios', '--release']);
+      final code = await run(['android', '--simulator']);
       expect(code, 64);
     });
   });

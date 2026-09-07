@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### Removed (2026-09-07)
+
+- The WebGL transport: `FlunityWebGLConfig`, `FlunityWebGLController`,
+  `FlunityWebGLView`, the InAppWebView transport, and the
+  `flutter_inappwebview` dependency. `MessageTransport` stays as the
+  custom-transport seam; `attachTransport`/`detachTransport` unchanged.
+
 ### Initial
 
 - `FlunityMessage` hierarchy + built-in types (Ping/Pong, LoadScene/SceneReady).

@@ -2,7 +2,7 @@ import 'package:path/path.dart' as p;
 
 import 'manifest_schema.dart';
 
-enum FlunityTarget { webgl, ios, android }
+enum FlunityTarget { ios, android }
 
 class FlunityProject {
   FlunityProject({
@@ -11,7 +11,6 @@ class FlunityProject {
     required this.version,
     required this.target,
     required this.paths,
-    required this.webgl,
     required this.bridge,
   });
 
@@ -20,7 +19,6 @@ class FlunityProject {
   final String version;
   final FlunityTarget target;
   final FlunityPaths paths;
-  final FlunityWebGLSettings webgl;
   final FlunityBridgeSettings bridge;
 
   static FlunityProject loadFromManifest(String manifestPath) {
@@ -29,7 +27,6 @@ class FlunityProject {
 
   String get manifestPath => p.join(rootDir, 'flunity.yaml');
 
-  bool get isWebGL => target == FlunityTarget.webgl;
   bool get isIos => target == FlunityTarget.ios;
   bool get isAndroid => target == FlunityTarget.android;
   bool get isNative => isIos || isAndroid;
@@ -39,14 +36,13 @@ class FlunityProject {
   /// Resolution order:
   ///   1. `paths.unityBuildOverride` (legacy `unity_build:` field) wins.
   ///   2. Otherwise `<paths.unityBuilds>/<target.name>` —
-  ///      e.g. `unity_project/Builds/webgl`, `Builds/ios`, `Builds/android`.
+  ///      e.g. `Builds/ios`, `Builds/android`.
   String get buildDir => buildDirFor(target);
 
   /// Build directory for an explicitly requested [target].
   ///
-  /// `flunity bundle ios` in a `target: webgl` project must read
-  /// `Builds/ios`, not `Builds/webgl` — a project can iterate on several
-  /// targets at once, so the manifest's `target` is only the default.
+  /// A project can iterate on several targets at once, so the manifest's
+  /// `target` is only the default.
   /// `unity_build_override`, when set, pins every target to one directory.
   String buildDirFor(FlunityTarget requested) {
     final override = paths.unityBuildOverride;
@@ -60,7 +56,6 @@ class FlunityPaths {
     required this.flutterApp,
     required this.unityProject,
     required this.unityBuilds,
-    required this.flutterAssets,
     this.unityBuildOverride,
   });
 
@@ -74,37 +69,10 @@ class FlunityPaths {
   /// Per-target builds live at `<unityBuilds>/<target.name>` (lowercase).
   final String unityBuilds;
 
-  /// Asset copy destination for `flunity bundle webgl`.
-  final String flutterAssets;
-
   /// Legacy `unity_build:` field. When set, overrides the per-target
   /// derivation in [FlunityProject.buildDir]. Accepted for backward
   /// compatibility with manifests written before Plan F.
   final String? unityBuildOverride;
-}
-
-class FlunityWebGLSettings {
-  FlunityWebGLSettings({
-    required this.devServer,
-    required this.androidEmulatorHost,
-  });
-
-  final FlunityDevServerSettings devServer;
-  final String androidEmulatorHost;
-}
-
-class FlunityDevServerSettings {
-  FlunityDevServerSettings({
-    required this.host,
-    required this.port,
-    required this.crossOriginIsolation,
-    required this.hotReload,
-  });
-
-  final String host;
-  final int port;
-  final bool crossOriginIsolation;
-  final bool hotReload;
 }
 
 class FlunityBridgeSettings {

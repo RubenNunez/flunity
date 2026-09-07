@@ -6,6 +6,12 @@ For per-commit detail, see `git log`. For per-package additions, see `packages/f
 
 ## [Unreleased]
 
+### Removed (2026-09-07)
+
+- **WebGL support, entirely** — the WebGL build target, the in-WebView player,
+  the dev server, and every `webgl` CLI command. Flunity is native
+  Unity-as-a-library (iOS/Android) only. Git history keeps the old code.
+
 ### Plans landed
 
 - **Plan A–D** — workspace, CLI, templates, real-world fixes. WebGL flow shipped end-to-end.

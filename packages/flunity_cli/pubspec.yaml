@@ -1,5 +1,5 @@
 name: flunity_cli
-description: The flunity command — scaffold, serve, and bundle Flutter + Unity WebGL projects.
+description: The flunity command — scaffold, build, and bundle Flutter + Unity-as-a-library projects.
 version: 0.1.0
 homepage: https://github.com/RubenNunez/flunity
 repository: https://github.com/RubenNunez/flunity

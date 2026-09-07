@@ -16,23 +16,15 @@ void main() {
     if (tmp.existsSync()) tmp.deleteSync(recursive: true);
   });
 
-  test('parses a complete webgl manifest', () {
+  test('parses a complete manifest', () {
     File(p.join(tmp.path, 'flunity.yaml')).writeAsStringSync('''
 name: my_app
 version: 0.1.0
-target: webgl
+target: ios
 paths:
   flutter_app: flutter_app
   unity_project: unity_project
   unity_builds: unity_project/Builds
-  flutter_assets: flutter_app/assets/unity_webgl
-webgl:
-  dev_server:
-    host: 127.0.0.1
-    port: 8080
-    cross_origin_isolation: true
-    hot_reload: false
-  android_emulator_host: 10.0.2.2
 bridge:
   enabled: true
   messages: []
@@ -44,9 +36,8 @@ bridge:
 
     expect(project.name, 'my_app');
     expect(project.version, '0.1.0');
-    expect(project.target, FlunityTarget.webgl);
-    expect(project.isWebGL, isTrue);
-    expect(project.isNative, isFalse);
+    expect(project.target, FlunityTarget.ios);
+    expect(project.isNative, isTrue);
     expect(project.paths.flutterApp, p.join(tmp.path, 'flutter_app'));
     expect(project.paths.unityProject, p.join(tmp.path, 'unity_project'));
     expect(
@@ -55,15 +46,9 @@ bridge:
     );
     expect(
       project.buildDir,
-      p.join(tmp.path, 'unity_project', 'Builds', 'webgl'),
+      p.join(tmp.path, 'unity_project', 'Builds', 'ios'),
     );
     expect(project.paths.unityBuildOverride, isNull);
-    expect(
-      project.paths.flutterAssets,
-      p.join(tmp.path, 'flutter_app', 'assets', 'unity_webgl'),
-    );
-    expect(project.webgl.devServer.host, '127.0.0.1');
-    expect(project.webgl.devServer.port, 8080);
     expect(project.bridge.enabled, true);
   });
 
@@ -78,7 +63,6 @@ target: ios
     expect(project.target, FlunityTarget.ios);
     expect(project.isIos, isTrue);
     expect(project.isNative, isTrue);
-    expect(project.isWebGL, isFalse);
     expect(
       project.buildDir,
       p.join(tmp.path, 'unity_project', 'Builds', 'ios'),
@@ -105,7 +89,7 @@ target: android
   test('applies sensible defaults to a minimal manifest', () {
     File(p.join(tmp.path, 'flunity.yaml')).writeAsStringSync('''
 name: minimal
-target: webgl
+target: android
 ''');
 
     final project = FlunityProject.loadFromManifest(
@@ -120,10 +104,8 @@ target: webgl
     );
     expect(
       project.buildDir,
-      p.join(tmp.path, 'unity_project', 'Builds', 'webgl'),
+      p.join(tmp.path, 'unity_project', 'Builds', 'android'),
     );
-    expect(project.webgl.devServer.host, '127.0.0.1');
-    expect(project.webgl.devServer.port, 8080);
     expect(project.bridge.enabled, true);
   });
 
@@ -132,21 +114,21 @@ target: webgl
     () {
       File(p.join(tmp.path, 'flunity.yaml')).writeAsStringSync('''
 name: legacy
-target: webgl
+target: ios
 paths:
-  unity_build: unity_project/Builds/WebGL
+  unity_build: unity_project/Builds/Export
 ''');
       final project = FlunityProject.loadFromManifest(
         p.join(tmp.path, 'flunity.yaml'),
       );
       expect(
         project.paths.unityBuildOverride,
-        p.join(tmp.path, 'unity_project', 'Builds', 'WebGL'),
+        p.join(tmp.path, 'unity_project', 'Builds', 'Export'),
       );
       // buildDir returns the override, not the per-target derivation.
       expect(
         project.buildDir,
-        p.join(tmp.path, 'unity_project', 'Builds', 'WebGL'),
+        p.join(tmp.path, 'unity_project', 'Builds', 'Export'),
       );
     },
   );
@@ -162,7 +144,7 @@ target: windows
         isA<ManifestException>().having(
           (e) => e.message,
           'message',
-          allOf(contains('windows'), contains('webgl, ios, android')),
+          allOf(contains('windows'), contains('ios, android')),
         ),
       ),
     );
@@ -180,7 +162,7 @@ target: native_android
   });
 
   test('rejects manifest with missing name', () {
-    File(p.join(tmp.path, 'flunity.yaml')).writeAsStringSync('target: webgl');
+    File(p.join(tmp.path, 'flunity.yaml')).writeAsStringSync('target: ios');
     expect(
       () => FlunityProject.loadFromManifest(p.join(tmp.path, 'flunity.yaml')),
       throwsA(isA<ManifestException>()),

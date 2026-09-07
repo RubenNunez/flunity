@@ -1,12 +1,11 @@
 # Multi-target builds
 
-A single Unity project can produce three independent build artifacts: a WebGL bundle, an iOS Xcode export, and an Android Gradle module. Flunity treats each as a first-class **target** with its own manifest entry, build dir, and Flutter integration path.
+A single Unity project can produce two independent build artifacts: an iOS Xcode export and an Android Gradle module. Flunity treats each as a first-class **target** with its own manifest entry, build dir, and Flutter integration path.
 
 ## Targets
 
 | Target | Manifest | Build dir | Flutter integration |
 | --- | --- | --- | --- |
-| `webgl` | `target: webgl` | `unity_project/Builds/webgl/` | Asset bundle (`flutter_app/assets/unity_webgl/`) loaded by `FlunityWebGLView`. |
 | `ios` | `target: ios` | `unity_project/Builds/ios/` | `flutter_app/ios/UnityExport/` Xcode sub-project + `UnityFramework.xcframework` embedded into Runner. |
 | `android` | `target: android` | `unity_project/Builds/android/` | `flutter_app/android/unityLibrary/` Gradle module included from `settings.gradle`. |
 
@@ -17,19 +16,18 @@ The build dir is derived as `<paths.unity_builds>/<target>` — by default `unit
 The CLI scaffolds for one target at a time. To target the others, edit `flunity.yaml`:
 
 ```yaml
-target: ios   # was webgl
+target: android   # was ios
 ```
 
-…then re-run `flunity doctor` to see what's missing for the new target. If you scaffolded `--target webgl` originally, your `flutter_app/ios/Info.plist` won't have an embedded UnityFramework — run `flunity bundle ios` after the first `flunity build ios` to copy the artifact in.
+…then re-run `flunity doctor` to see what's missing for the new target.
 
-> Plan G ("multi-target single project") will let one manifest declare `targets: [webgl, ios]` and pick the active target via a CLI flag. Until then, switching means re-editing the manifest.
+> Plan G ("multi-target single project") will let one manifest declare `targets: [ios, android]` and pick the active target via a CLI flag. Until then, switching means re-editing the manifest.
 
 ## Sharing assets across targets
 
 Inside `unity_project/`:
 
 - `Assets/` — shared by all targets.
-- `Assets/Plugins/WebGL/` — only included in WebGL builds (Unity excludes by platform).
 - `Assets/Plugins/iOS/` and `Assets/Plugins/Android/` — only included in their respective native builds.
 
 The vendored `Assets/Editor/Flunity/` build scripts produce different outputs per target but read the **same scenes** from `EditorBuildSettings.scenes`. Maintain one set of scenes; the per-target exporter handles platform differences.
@@ -53,5 +51,5 @@ Run `flunity doctor` as the first CI step; it surfaces missing toolchain pieces 
 
 ## Limitations to know about
 
-- **Only one target's artifacts can be "bundled" into a given Flutter scaffold at a time.** `flunity bundle ios` copies into `flutter_app/ios/UnityExport/`; it doesn't conflict with `flunity bundle android`'s `flutter_app/android/unityLibrary/`, but the **Flutter pubspec assets** for WebGL (`assets/unity_webgl/`) and the iOS/Android native modules can coexist if you really want a triple-target Flutter app — Plan G will make that ergonomic.
-- **macOS desktop is not a Flunity target.** It's tracked as Plan J. For now, run the WebGL build inside Flutter desktop's WebView if you need a Mac/Linux/Windows desktop story.
+- **`flunity bundle ios` and `flunity bundle android` coexist** — one copies into `flutter_app/ios/UnityExport/`, the other into `flutter_app/android/unityLibrary/`.
+- **macOS desktop is not a Flunity target.** It's tracked as Plan J.
