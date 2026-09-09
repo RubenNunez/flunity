@@ -5,8 +5,14 @@ The `flunity` command — a development companion for Flutter + Unity-as-a-libra
 ## Install
 
 ```bash
-dart pub global activate flunity_cli
+git clone https://github.com/RubenNunez/flunity.git
+dart pub global activate --source path flunity/packages/flunity_cli
 ```
+
+Neither `flunity_cli` nor `flunity_bridge` is on pub.dev yet, so install from a
+clone. A path activation runs the code in that directory, so `git pull` is how you
+update — no need to re-activate. Once the packages are published,
+`dart pub global activate flunity_cli` will work instead.
 
 This installs the `flunity` executable. Make sure `$HOME/.pub-cache/bin` is on your PATH.
 

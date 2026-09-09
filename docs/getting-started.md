@@ -14,8 +14,14 @@ Welcome to Flunity. This guide takes you from zero to a Flutter app rendering a 
 ## 1. Install the CLI
 
 ```bash
-dart pub global activate flunity_cli
+git clone https://github.com/RubenNunez/flunity.git
+dart pub global activate --source path flunity/packages/flunity_cli
 ```
+
+Neither `flunity_cli` nor `flunity_bridge` is on pub.dev yet, so install from a
+clone. A path activation runs the code in that directory, so `git pull` is how you
+update — no need to re-activate. Once the packages are published,
+`dart pub global activate flunity_cli` will work instead.
 
 Verify (`$HOME/.pub-cache/bin` must be on your PATH):
 
