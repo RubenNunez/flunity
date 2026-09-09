@@ -42,9 +42,13 @@ adapted from flutter_embed_unity v2.0.0 (MIT).
   }
   s.swift_version = '5.0'
 
-  # The vendored xcframework is a compile-time stub. The real UnityFramework
-  # is provided at app integration time by `flunity bundle ios` (which copies
-  # the user's actual Unity-built framework into the consuming Flutter app's
-  # ios/Frameworks tree and re-links).
+  # The vendored xcframework is a compile-time stub and exports no symbols
+  # (see the OTHER_LDFLAGS note above). Nothing ever swaps it for the real
+  # framework: `flunity build ios` emits an *unbuilt* Unity-iPhone.xcodeproj,
+  # and `flunity bundle ios` only copies that export into the consuming app's
+  # ios/UnityExport/. The real UnityFramework.framework is produced when the
+  # user drags Unity-iPhone.xcodeproj in as a sub-project and embeds its
+  # UnityFramework product; the stub stays put and dyld resolves the symbols
+  # at runtime.
   s.vendored_frameworks = framework_path
 end

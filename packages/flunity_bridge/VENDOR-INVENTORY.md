@@ -74,7 +74,7 @@ pubspec comment.)
 | `flutter_embed_unity_2022_3_ios/ios/.../View/UnityViewController.swift` | `ios/Classes/View/UnityViewController.swift` | Keep. |
 | `flutter_embed_unity_2022_3_ios/ios/.../View/UnityViewFactory.swift` | `ios/Classes/View/UnityViewFactory.swift` | Update factory ID to `flunity_bridge/UnityView`. |
 | `flutter_embed_unity_2022_3_ios/ios/.../View/UnityViewStack.swift` | `ios/Classes/View/UnityViewStack.swift` | Keep. |
-| `flutter_embed_unity_2022_3_ios/ios/.../UnityFrameworkStubs/**` | `ios/UnityFrameworkStubs/**` | The stub xcframework headers — verbatim copy (compile-time stubs; the real UnityFramework.xcframework is provided at app integration time by `flunity bundle ios`). |
+| `flutter_embed_unity_2022_3_ios/ios/.../UnityFrameworkStubs/**` | `ios/UnityFrameworkStubs/**` | The stub xcframework headers — verbatim copy (compile-time stubs; they are never replaced. The real `UnityFramework.framework` is built by the consuming app from the `Unity-iPhone.xcodeproj` sub-project that `flunity bundle ios` copies into `ios/UnityExport/`). |
 | `flutter_embed_unity_2022_3_ios/lib/flutter_embed_unity_2022_3_ios.dart` | (skip — collapsed into flunity_bridge's main lib) | This file just registers the iOS implementation against the platform interface. Our collapsed-no-federation model handles registration internally. |
 
 ## flutter_embed_unity_6000_0_android → `packages/flunity_bridge/android/`
@@ -134,10 +134,15 @@ same scripts — we use the 6000.0 variant since Unity 6 is locked.)
 ## Open questions for the implementer (Phase 3)
 
 1. **`UnityFrameworkStubs/`**: the upstream iOS package ships compile-time
-   stub headers. Phase 3 should copy these verbatim. Phase 5 (`flunity bundle
-   ios`) replaces them with the real `UnityFramework.xcframework` produced by
-   `flunity build ios`. Verify this dance works (build with stubs → swap with
-   real framework → re-link).
+   stub headers. Phase 3 should copy these verbatim. **Resolved differently —
+   there is no swap.** `flunity build ios` emits an unbuilt
+   `Unity-iPhone.xcodeproj`, not an xcframework, and `flunity bundle ios` only
+   copies that export into `ios/UnityExport/`. The real
+   `UnityFramework.framework` is built by the consuming app from the
+   sub-project; the stubs stay in place and the symbols are deferred to runtime
+   via `-undefined dynamic_lookup` (plugin side) and
+   `-Wl,-U,_FlunityBridge_sendToFlutter` (added to Unity's target by
+   `ProjectExporterIos.cs`).
 2. **`UnityPlayerSingleton`**: both platforms enforce ONE Unity instance per
    process. This is non-negotiable for Unity-as-library. Document this in
    `docs/multi-target.md` so users understand they can't mount two

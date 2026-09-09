@@ -6,7 +6,7 @@ A single Unity project can produce two independent build artifacts: an iOS Xcode
 
 | Target | Manifest | Build dir | Flutter integration |
 | --- | --- | --- | --- |
-| `ios` | `target: ios` | `unity_project/Builds/ios/` | `flutter_app/ios/UnityExport/` Xcode sub-project + `UnityFramework.xcframework` embedded into Runner. |
+| `ios` | `target: ios` | `unity_project/Builds/ios/` | `flutter_app/ios/UnityExport/` Xcode sub-project; its `UnityFramework.framework` product is embedded into Runner. |
 | `android` | `target: android` | `unity_project/Builds/android/` | `flutter_app/android/unityLibrary/` Gradle module included from `settings.gradle`. |
 
 The build dir is derived as `<paths.unity_builds>/<target>` — by default `unity_project/Builds/<target>`. Override it per-project with `paths.unity_build` if your CI splits artifacts somewhere unusual.

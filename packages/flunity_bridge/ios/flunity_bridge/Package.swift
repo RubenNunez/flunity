@@ -24,18 +24,16 @@ let package = Package(
             targets: ["flunity_bridge"])
     ],
     dependencies: [
-        // TODO: when we update the minimum Flutter version to 3.41+, we should uncomment this (and target dependency below)
-        // See https://github.com/learntoflutter/flutter_embed_unity/discussions/72#discussioncomment-16475482
-        // .package(name: "FlutterFramework", path: "../FlutterFramework")  // Requires Flutter 3.41+
+        // Provided by Flutter's build system at ios/Flutter/ephemeral/Packages/
+        // .packages/FlutterFramework. Requires Flutter 3.41+; our floor is 3.44.
+        .package(name: "FlutterFramework", path: "../FlutterFramework"),
     ],
     targets: [
         .target(
             name: "flunity_bridge",
             dependencies: [
-                "UnityFramework"
-                // TODO: when we update the minimum Flutter version to 3.41+, we should uncomment this
-                // See https://github.com/learntoflutter/flutter_embed_unity/discussions/72#discussioncomment-16475482
-                // .product(name: "FlutterFramework", package: "FlutterFramework")  // Requires Flutter 3.41+
+                "UnityFramework",
+                .product(name: "FlutterFramework", package: "FlutterFramework"),
             ],
             resources: [
                 // If your plugin requires a privacy manifest
@@ -48,6 +46,15 @@ let package = Package(
                 // If you have other resources that need to be bundled with your plugin, refer to
                 // the following instructions to add them:
                 // https://developer.apple.com/documentation/xcode/bundling-resources-with-a-swift-package
+            ],
+            linkerSettings: [
+                // The vendored UnityFramework xcframework is a symbol-less stub
+                // (see UnityFrameworkStubs/). The real UnityFramework is built
+                // by the consuming app from Unity's Xcode sub-project, so
+                // `_OBJC_CLASS_$_UnityFramework` cannot be resolved at link
+                // time here. Defer it to dyld — the CocoaPods equivalent is
+                // `OTHER_LDFLAGS = -undefined dynamic_lookup` in the podspec.
+                .unsafeFlags(["-Xlinker", "-undefined", "-Xlinker", "dynamic_lookup"]),
             ]
         ),
         .binaryTarget(

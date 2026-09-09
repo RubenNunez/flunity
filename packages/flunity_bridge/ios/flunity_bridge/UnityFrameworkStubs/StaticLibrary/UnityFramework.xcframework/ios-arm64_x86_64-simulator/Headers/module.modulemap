@@ -1,0 +1,9 @@
+// Static-library xcframework: a plain `module` (not `framework module`), and
+// the map lives in HeadersPath — a `framework module` map under Modules/ is
+// only resolvable inside a real .framework bundle, and Xcode/SPM silently
+// fails to find the module otherwise ("Unable to resolve module dependency").
+module UnityFramework {
+    umbrella header "UnityFramework.h"
+    export *
+    module * { export * }
+}
