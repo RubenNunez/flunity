@@ -53,8 +53,8 @@ class FlunityComponentHandle {
     required this.id,
     required this.name,
     required this.path,
-    required FlunityInvoker invoker,
-  }) : _invoker = invoker;
+    required this._invoker,
+  });
 
   final String id;
   final String name;

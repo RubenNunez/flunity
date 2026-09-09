@@ -1,13 +1,13 @@
 # Native setup (iOS / Android)
 
-End-to-end walkthrough for building a Flunity app that embeds Unity natively — `UnityFramework.xcframework` on iOS, a `unityLibrary` Gradle module on Android.
+End-to-end walkthrough for building a Flunity app that embeds Unity natively — a `UnityFramework.framework` on iOS, a `unityLibrary` Gradle module on Android.
 
 ## Prerequisites
 
 | Tool | Minimum | Notes |
 | --- | --- | --- |
 | Unity | 6.0 (6000.x) | Install **iOS Build Support** and/or **Android Build Support** modules via Unity Hub. |
-| Flutter | 3.38 | Dart 3.10 sdk. |
+| Flutter | 3.44 | Dart 3.12 sdk. Required for Swift Package Manager support. |
 | Xcode | 15+ | macOS only. Required for `flunity build ios` and `flutter build ios`. |
 | Android NDK | 27+ | Set `ANDROID_HOME` and either install NDK 27 via Android Studio's SDK Manager or export `ANDROID_NDK_HOME`. |
 
@@ -61,8 +61,59 @@ Already have `unity_project/` open in the Editor? If the standalone `unity` CLI 
 `flunity bundle ios` does **not** edit `project.pbxproj` automatically (text-editing Xcode project files is fragile). It prints a checklist instead:
 
 1. Open `flutter_app/ios/Runner.xcworkspace` in Xcode.
-2. Drag `UnityExport/Unity-iPhone.xcodeproj` into the Runner project as a sub-project.
-3. Under Runner target → Frameworks, Libraries, and Embedded Content, add `UnityFramework.xcframework` as **Embed & Sign**.
+2. Drag `UnityExport/unityLibrary/Unity-iPhone.xcodeproj` into the Runner project as a sub-project.
+3. Under Runner target → Frameworks, Libraries, and Embedded Content, add the sub-project's `UnityFramework.framework` product as **Embed & Sign**.
+
+## Dependency manager (CocoaPods / Swift Package Manager)
+
+Swift Package Manager is the default on Flutter 3.44+, and `flunity_bridge`
+supports both managers — `ios/flunity_bridge/Package.swift` for SPM,
+`ios/flunity_bridge.podspec` for CocoaPods. You do not have to choose; the two
+coexist in one project and Flutter wires each plugin through whichever it
+supports.
+
+Since WebGL was removed, `flunity_bridge` has no plugin dependencies of its own —
+just `flutter` and `meta` — so nothing a Flunity app pulls in is missing SPM
+support. With SPM enabled the plugin resolves entirely through Package
+Dependencies and `pod install` has nothing of ours to install. If your own
+dependencies are likewise SPM-capable you can retire CocoaPods completely —
+Flutter detects this and prints the exact `pod deintegrate` steps, including the
+two `Pods-Runner` xcconfig includes to strip from `ios/Flutter/Debug.xcconfig`
+and `Release.xcconfig`.
+
+A fully deintegrated `ios`-target app — no `Podfile`, no `Pods/`, no xcconfig
+includes — has been verified to build: `flutter build ios` runs no `pod install`
+step at all. Nothing in `flunity_cli` ever invokes CocoaPods, and embedding Unity
+is pure Xcode (a sub-project plus Embed & Sign), so the native path needs it
+nowhere. Note that `pod deintegrate` leaves `Runner.xcworkspace` behind; that's
+harmless, and you can open `Runner.xcodeproj` directly instead.
+
+`flunity_bridge.podspec` stays in this repo regardless, for consumers who
+deliberately pin CocoaPods — supported until it goes read-only on 2026-12-02.
+
+Dragging Unity's `Unity-iPhone.xcodeproj` in as a sub-project is safe with SPM
+enabled. Flutter's migration only ever inserts into `project.pbxproj`, guards every
+section against re-application, and never touches `projectReferences`, so the Unity
+wiring is not disturbed. Re-running it is a no-op.
+
+To force one manager for a single project, set it in `flutter_app/pubspec.yaml`:
+
+```yaml
+flutter:
+  config:
+    enable-swift-package-manager: true   # or false to stay on CocoaPods
+```
+
+**Verified:** debug iOS Simulator builds of an `ios`-target scaffold under both
+managers, without a Unity export present.
+**Not verified:** release and archive builds (TestFlight, ad-hoc, App Store)
+under SPM, and runtime symbol resolution against a real Unity export.
+`Package.swift` deliberately forces `type: .dynamic` and defers
+`_OBJC_CLASS_$_UnityFramework` to dyld via `-undefined dynamic_lookup`; the
+failure mode that machinery guards against — `symbol not found in flat
+namespace` — only appears in archive configurations. Treat the first release
+build on SPM as unproven, and fall back to
+`enable-swift-package-manager: false` if it bites.
 
 ## Run
 

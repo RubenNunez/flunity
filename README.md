@@ -4,7 +4,7 @@
 
 **Status: pre-alpha.** Under active development. Public API may change without notice until `0.1.0`.
 
-Flunity is a development companion for Flutter + Unity projects. It embeds Unity natively — **iOS** (UnityFramework.xcframework embedded into the Flutter Runner) and **Android** (`unityLibrary` Gradle module included from the Flutter Android scaffold). Pick a target with `flunity create --target ios|android`. (WebGL-in-a-WebView support existed through 2026-09-07 and was removed — git history has it.)
+Flunity is a development companion for Flutter + Unity projects. It embeds Unity natively — **iOS** (a UnityFramework.framework embedded into the Flutter Runner) and **Android** (`unityLibrary` Gradle module included from the Flutter Android scaffold). Pick a target with `flunity create --target ios|android`. (WebGL-in-a-WebView support existed through 2026-09-07 and was removed — git history has it.)
 
 ## Packages
 

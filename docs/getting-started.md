@@ -4,8 +4,8 @@ Welcome to Flunity. This guide takes you from zero to a Flutter app rendering a 
 
 ## Prerequisites
 
-- **Flutter** 3.38 or newer (`flutter --version`).
-- **Dart** 3.10 or newer (ships with Flutter).
+- **Flutter** 3.44 or newer (`flutter --version`).
+- **Dart** 3.12 or newer (ships with Flutter).
 - **Unity** 6.0 (6000.x) with the right Build Support module for your target:
   - `ios` → iOS Build Support
   - `android` → Android Build Support + NDK 27
