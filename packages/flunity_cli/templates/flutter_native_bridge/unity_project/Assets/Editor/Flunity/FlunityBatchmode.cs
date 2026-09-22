@@ -103,14 +103,34 @@ public class FlunityBatchmode
         // OpenJDK module isn't installed, Unity fails with "Failed to update
         // Android SDK package list" — fall back to JAVA_HOME.
         //
+        // Only then, though. Unity validates whatever JDK it is handed and
+        // rejects anything but the exact build its Android module ships:
+        //   Incompatible Java version '21.0.12.1', expected … '17.0.9.9'
+        // Not a major-version check — a 17.0.17 is refused just as flatly —
+        // so a machine whose JAVA_HOME points at any other JDK (a toolchain
+        // that needs a newer one, say) could not export at all. The embedded
+        // JDK is the one Unity wants, so prefer it and keep JAVA_HOME for the
+        // case the fallback was written for: the module isn't there.
+        //
         // UnityEditor.Android only exists when Android Build Support is
         // installed and active, same as UnityEditor.iOS.Xcode below.
 #if UNITY_ANDROID
-        var javaHome = System.Environment.GetEnvironmentVariable("JAVA_HOME");
-        if (!string.IsNullOrEmpty(javaHome) && System.IO.Directory.Exists(javaHome))
+        var embeddedJdk = System.IO.Path.Combine(
+            BuildPipeline.GetPlaybackEngineDirectory(BuildTarget.Android, BuildOptions.None),
+            "OpenJDK");
+        if (System.IO.Directory.Exists(embeddedJdk))
         {
-            UnityEditor.Android.AndroidExternalToolsSettings.jdkRootPath = javaHome;
-            Debug.Log("Flunity: using JDK from JAVA_HOME: " + javaHome);
+            UnityEditor.Android.AndroidExternalToolsSettings.jdkRootPath = embeddedJdk;
+            Debug.Log("Flunity: using the Android module's embedded JDK: " + embeddedJdk);
+        }
+        else
+        {
+            var javaHome = System.Environment.GetEnvironmentVariable("JAVA_HOME");
+            if (!string.IsNullOrEmpty(javaHome) && System.IO.Directory.Exists(javaHome))
+            {
+                UnityEditor.Android.AndroidExternalToolsSettings.jdkRootPath = javaHome;
+                Debug.Log("Flunity: using JDK from JAVA_HOME: " + javaHome);
+            }
         }
 #endif
 

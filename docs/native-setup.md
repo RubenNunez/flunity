@@ -137,6 +137,14 @@ For Android the Unity build alone is ~2 min; on iOS ~3 min. Add `flunity build` 
 ## Troubleshooting
 
 - **"Unity binary not found"** — `flunity doctor` will show this. Set `UNITY_PATH` or pass `--unity` to `flunity build`.
+- **Android export aborts with "Incompatible Java version"** — e.g.
+  `Incompatible Java version '21.0.12.1', expected Java version 64-Bit
+  '17.0.9.9'`. Unity accepts only the exact JDK build its Android module ships,
+  so the export uses that embedded JDK
+  (`<Unity>/PlaybackEngines/AndroidPlayer/OpenJDK`) and consults `JAVA_HOME`
+  only when the module is missing. Seeing this on a current Flunity means the
+  module isn't installed — add **Android Build Support → OpenJDK** in Unity Hub
+  rather than repointing `JAVA_HOME`, which other toolchains need.
 - **Android build error mentioning `ndkPath`** — Plan F's vendored exporter strips Unity's hardcoded NDK path. If you still see it, your unity build pre-dates the new exporter; clean `unity_project/Library/` and rebuild.
 - **iOS link error about `_FlunityBridge_sendToFlutter`** — your scene is missing the `[FlunityBridge]` GameObject + `FlunityBridgeBehaviour`. The template ships with one in `Assets/Scripts/FlunityBridgeDemo.cs` you can drop into Main.unity.
 - **Flutter app boots but Unity is black on Android** — the `UnityPlayer` lifecycle is sensitive to your activity's `configChanges`. Add `orientation|keyboardHidden|screenSize|screenLayout` to the main activity in `android/app/src/main/AndroidManifest.xml`.
