@@ -6,6 +6,24 @@ For per-commit detail, see `git log`. For per-package additions, see `packages/f
 
 ## [Unreleased]
 
+### Fixed (2026-09-22)
+
+- **Batchmode exports no longer render every material black under URP.** URP
+  caches "is `SHADER_API_MOBILE` defined for the active build target?" in a
+  static that only the `UniversalRenderer` constructor ever assigns — i.e. the
+  first time something actually renders. `flunity build` runs Unity with
+  `-batchmode -nographics`, which never renders, so the flag kept its default
+  `false` and URP's build-time shader stripping resolved a Decal Renderer
+  Feature left on the default "Automatic" technique to DBuffer, while the iOS
+  player resolves it to ScreenSpace at runtime. The variants the player needed
+  were stripped and everything rendered black. `Flunity/Build/...` from an open
+  Editor was unaffected, because an Editor that has drawn a Scene or Game view
+  already has the flag populated — which is exactly why the CLI and the menu
+  item produced different artifacts from the same project. `ProjectExporter`
+  now primes URP's platform detection before `BuildPipeline.BuildPlayer`, in the
+  one place both routes funnel through, so the two agree. No-ops on Built-in
+  pipeline projects. Upstream: [Unity issue tracker](https://issuetracker.unity3d.com/issues/urp-all-materials-render-black-when-building-via-batchmode-or-without-rendering-scene-slash-game-view-in-editor-if-decal-renderer-technique-is-set-to-automatic).
+
 ### Removed (2026-09-07)
 
 - **WebGL support, entirely** — the WebGL build target, the in-WebView player,
