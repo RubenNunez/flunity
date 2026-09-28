@@ -198,7 +198,9 @@ class BuildCommand extends Command<int> {
       // "success" if this run fails silently.
       exportDir.deleteSync(recursive: true);
     }
-    exportDir.createSync(recursive: true);
+    // Unity 6.3's Android export refuses a destination that exists at all,
+    // even empty; it creates the folder itself.
+    if (target != FlunityTarget.android) exportDir.createSync(recursive: true);
 
     if (useConnectedEditor) {
       final timeoutMinutes =
