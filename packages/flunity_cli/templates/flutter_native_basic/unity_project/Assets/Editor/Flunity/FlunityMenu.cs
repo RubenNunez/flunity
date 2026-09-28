@@ -14,6 +14,7 @@ public class FlunityMenu : EditorWindow
     static void ExportProjectAndroid()
     {
         string exportPath = ResolveExportPath("android");
+        FlunityBatchmode.ApplyAndroidExportSettings();
         ProjectExportCheckerResult result = projectExportChecker.PreCheckAndroidWithKnownPath(exportPath);
 
 #if UNITY_ANDROID

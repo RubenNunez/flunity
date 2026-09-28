@@ -22,22 +22,17 @@ import 'package:mason_logger/mason_logger.dart';
 ///     instance against a locked project.
 ///   - **Connected Editor**: when the project is locked *and* the
 ///     standalone `unity` CLI (shipped by Unity Hub, see [UnityCli]) is
-///     available, drives the already-running Editor instead — either by
-///     invoking one of Flunity's own `Flunity/Build/...` menu items (which
-///     already do the right per-target setup), or, when no menu item covers
-///     the target, by falling back to the generic `unity cmd build` +
-///     `build_status` polling.
+///     available, drives the already-running Editor instead by invoking
+///     one of Flunity's own `Flunity/Build/...` menu items, which do the
+///     per-target export setup. (Unity's generic `unity cmd build` is never
+///     used: for Android it produces a finished APK, not the Gradle
+///     `unityLibrary` export Flutter needs.)
 ///
 /// `--batch` forces the batch-mode route unconditionally.
 class BuildCommand extends Command<int> {
-  BuildCommand({
-    required Logger logger,
-    UnityCli? unityCli,
-    Duration? connectedBuildPollInterval,
-  }) : _logger = logger,
-       _unityCli = unityCli ?? UnityCli(),
-       _connectedBuildPollInterval =
-           connectedBuildPollInterval ?? const Duration(seconds: 5) {
+  BuildCommand({required Logger logger, UnityCli? unityCli})
+    : _logger = logger,
+      _unityCli = unityCli ?? UnityCli() {
     argParser
       ..addOption(
         'unity',
@@ -76,11 +71,6 @@ class BuildCommand extends Command<int> {
 
   final Logger _logger;
   final UnityCli _unityCli;
-
-  /// Delay between `build_status` polls in the generic connected-Editor
-  /// fallback. Overridable (test-only) so polling tests don't burn real
-  /// wall-clock seconds.
-  final Duration _connectedBuildPollInterval;
 
   @override
   String get name => 'build';
@@ -198,9 +188,7 @@ class BuildCommand extends Command<int> {
       // "success" if this run fails silently.
       exportDir.deleteSync(recursive: true);
     }
-    // Unity 6.3's Android export refuses a destination that exists at all,
-    // even empty; it creates the folder itself.
-    if (target != FlunityTarget.android) exportDir.createSync(recursive: true);
+    exportDir.createSync(recursive: true);
 
     if (useConnectedEditor) {
       final timeoutMinutes =
@@ -246,7 +234,7 @@ class BuildCommand extends Command<int> {
   }
 
   /// Drives the build through the already-connected Unity Editor instead of
-  /// batch mode. See the class doc for the menu-item-vs-fallback routing.
+  /// batch mode, through the target's `Flunity/Build/...` menu item.
   Future<int> _buildViaConnectedEditor({
     required FlunityProject project,
     required FlunityTarget target,
@@ -270,47 +258,23 @@ class BuildCommand extends Command<int> {
 
     final menuPath = _connectedEditorMenuPath(target, simulator: simulator);
 
-    if (menuPath != null) {
-      _logger.info(
-        'Unity Editor has this project open — building via the connected '
-        'Editor ($menuPath).',
-      );
-      final progress = _logger.progress(
-        'Waiting for Unity (this can take several minutes)',
-      );
-      final result = await _unityCli.runMenu(
-        menuPath,
-        projectPath: project.paths.unityProject,
-        timeout: timeout,
-      );
-      if (result.success) {
-        progress.complete();
-      } else {
-        progress.fail();
-        _logger.err('Connected-Editor build failed: ${result.errorSummary}');
-      }
+    _logger.info(
+      'Unity Editor has this project open — building via the connected '
+      'Editor ($menuPath).',
+    );
+    final progress = _logger.progress(
+      'Waiting for Unity (this can take several minutes)',
+    );
+    final result = await _unityCli.runMenu(
+      menuPath,
+      projectPath: project.paths.unityProject,
+      timeout: timeout,
+    );
+    if (result.success) {
+      progress.complete();
     } else {
-      // No Flunity menu item drives this target through the connected
-      // Editor yet (currently just Android — see FlunityMenu.cs, whose
-      // Android export also needs FlunityBatchmode.ApplyAndroidExportSettings
-      // for a correct Gradle "Export Project" output, which only the
-      // batch-mode path applies today).
-      _logger.warn(
-        'No Flunity menu item drives ${target.name} through the connected '
-        'Editor yet; falling back to the generic `unity cmd build`. This '
-        'path does not run Flunity\'s per-target export setup, so verify '
-        'the result — or quit the Editor and use --batch for a '
-        'guaranteed-correct build.',
-      );
-      final fallbackOk = await _buildViaConnectedEditorFallback(
-        project: project,
-        target: target,
-        timeout: timeout,
-        targetBuildDir: targetBuildDir,
-      );
-      if (!fallbackOk) {
-        _logger.err('Connected-Editor fallback build did not complete.');
-      }
+      progress.fail();
+      _logger.err('Connected-Editor build failed: ${result.errorSummary}');
     }
 
     return _reportArtifactResult(project, target, targetBuildDir);
@@ -360,70 +324,6 @@ class BuildCommand extends Command<int> {
     return null;
   }
 
-  /// Generic fallback for targets with no dedicated Flunity menu item:
-  /// triggers the connected Editor's own async `build` pipeline command and
-  /// polls `build_status` until it reports `completed` or [timeout] elapses.
-  ///
-  /// `completed` only means the build *finished*, not that it succeeded —
-  /// the caller's artifact check on disk is the authoritative pass/fail
-  /// signal, matching the menu route.
-  Future<bool> _buildViaConnectedEditorFallback({
-    required FlunityProject project,
-    required FlunityTarget target,
-    required Duration timeout,
-    required String targetBuildDir,
-  }) async {
-    final start = await _unityCli.runCommand(
-      [
-        'build',
-        '--target',
-        _unityBuildTargetFlag(target),
-        '--outputPath',
-        targetBuildDir,
-        '--confirm',
-        'true',
-      ],
-      projectPath: project.paths.unityProject,
-      timeout: const Duration(seconds: 30),
-    );
-    if (!start.success) {
-      _logger.err('Could not start the build: ${start.errorSummary}');
-      return false;
-    }
-
-    final progress = _logger.progress(
-      'Waiting for Unity to finish building ${target.name}',
-    );
-    final deadline = DateTime.now().add(timeout);
-    while (DateTime.now().isBefore(deadline)) {
-      await Future<void>.delayed(_connectedBuildPollInterval);
-      final status = await _unityCli.runCommand(
-        ['build_status'],
-        projectPath: project.paths.unityProject,
-        timeout: const Duration(seconds: 30),
-      );
-      if (!status.success) {
-        progress.fail();
-        _logger.err(
-          'Lost contact with the Editor while polling: ${status.errorSummary}',
-        );
-        return false;
-      }
-      final result = status.result;
-      final buildStatus = result is Map ? result['status'] as String? : null;
-      if (buildStatus == 'completed') {
-        progress.complete();
-        return true;
-      }
-    }
-    progress.fail();
-    _logger.err(
-      'Timed out after ${timeout.inMinutes} min waiting for the build to '
-      'finish.',
-    );
-    return false;
-  }
-
   int _reportArtifactResult(
     FlunityProject project,
     FlunityTarget target,
@@ -461,11 +361,10 @@ class BuildCommand extends Command<int> {
     };
   }
 
-  /// Menu item path for the connected-Editor route, or null when no
-  /// Flunity menu item covers this (target, variant) combination yet — see
+  /// Menu item path for the connected-Editor route — see
   /// `Assets/Editor/Flunity/FlunityMenu.cs` in
   /// `templates/unity_bridge_basic/` (the source of truth for what ships).
-  String? _connectedEditorMenuPath(
+  String _connectedEditorMenuPath(
     FlunityTarget target, {
     required bool simulator,
   }) {
@@ -474,7 +373,7 @@ class BuildCommand extends Command<int> {
         simulator
             ? 'Flunity/Build/iOS (Simulator)'
             : 'Flunity/Build/iOS (Device)',
-      FlunityTarget.android => null,
+      FlunityTarget.android => 'Flunity/Build/Android',
     };
   }
 

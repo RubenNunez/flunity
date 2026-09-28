@@ -79,7 +79,7 @@ public class FlunityBatchmode
     // Android library export requires and let the checker verify them. Without
     // this, `flunity build android` aborts on things a human would otherwise
     // set by hand in File -> Build Profiles / Player Settings.
-    static void ApplyAndroidExportSettings()
+    internal static void ApplyAndroidExportSettings()
     {
         // "Export Project" — we want a Gradle project (the unityLibrary
         // module), not a finished APK.
