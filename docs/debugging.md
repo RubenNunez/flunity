@@ -80,3 +80,37 @@ In >90% of cases one of those four steps points at the line.
 ## Disabling
 
 Both tools are pure-additive — if you don't initialize `flunityLogs` and don't call the Scene outlets, the auto-attached MonoBehaviours sit idle (one no-op `OnLog` registration, no per-frame work). You can also remove `FlunityLogStreamer` / `FlunitySceneInspector` from `[FlunityBridge]` if you really want zero overhead, but the cost is already negligible.
+
+## Everything renders black in the player, but looks fine in the Editor
+
+The classic tell is that `flunity build ios` produces a black build while
+`Flunity → Build → iOS (...)` from an open Editor, bundled the same way,
+looks correct. Same project, same exporter — the difference is the *process*.
+
+URP caches "is `SHADER_API_MOBILE` defined for the active build target?" in a
+static that is only ever assigned by the `UniversalRenderer` constructor — the
+first time something actually renders. `flunity build` runs Unity with
+`-batchmode -nographics`, which never renders anything, so the flag keeps its
+default `false`. URP's build-time shader stripping reads it, so a Decal Renderer
+Feature left on the default **Automatic** technique resolves to DBuffer at build
+time while the mobile player resolves it to ScreenSpace at runtime. The variants
+the player needs get stripped, and every material comes up black. An Editor that
+has drawn a Scene or Game view already has the flag populated, which is why the
+menu route looked fine. Upstream:
+[Unity issue tracker](https://issuetracker.unity3d.com/issues/urp-all-materials-render-black-when-building-via-batchmode-or-without-rendering-scene-slash-game-view-in-editor-if-decal-renderer-technique-is-set-to-automatic).
+
+Flunity handles this for you: `ProjectExporter.Export()` primes URP's platform
+detection before `BuildPipeline.BuildPlayer`, in the one place both the menu and
+the batchmode route funnel through. If you are on an older template, copy
+`Assets/Editor/Flunity/ProjectExporter.cs` from
+`templates/unity_bridge_basic/unity_project/` into your project.
+
+Belt-and-braces, and worth doing anyway: set the Decal Renderer Feature's
+**Technique** explicitly (Screen Space on mobile) in your Universal Renderer
+asset instead of leaving it on Automatic. That takes the cached flag out of the
+decision entirely, so build-time and runtime cannot disagree.
+
+If materials are black and you have *no* Decal Renderer Feature, the same class
+of bug applies to anything else URP decides at build time from runtime-populated
+state — check the Unity log from the failing build for `Decal`/stripping lines
+before assuming it is a texture problem.

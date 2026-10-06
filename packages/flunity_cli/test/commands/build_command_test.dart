@@ -70,9 +70,6 @@ bridge:
         BuildCommand(
           logger: Logger(level: Level.quiet),
           unityCli: unityCli,
-          // Keep the build_status poll loop from burning real wall-clock
-          // seconds in tests.
-          connectedBuildPollInterval: const Duration(milliseconds: 1),
         ),
       );
 
@@ -263,77 +260,54 @@ bridge:
       );
     });
 
-    test(
-      'android has no menu route and falls back to unity cmd build + polling',
-      () async {
-        writeManifest(target: 'android');
-        lockProject();
-        final calls = <List<String>>[];
-        var statusPolls = 0;
-        final unityCli = UnityCli(
-          env: const {'UNITY_CLI_PATH': '/fake/unity'},
-          fileExists: (_) => true,
-          processRunner: (exe, args, {workingDirectory}) async {
-            calls.add(args);
-            if (args.contains('editor_status')) {
-              return ProcessResult(0, 0, '{"success": true}', '');
-            }
-            if (args.contains('get_build_settings')) {
-              return ProcessResult(
-                0,
-                0,
-                '{"success": true, "data": {"result": '
-                    '{"activeBuildTarget": "Android"}}}',
-                '',
-              );
-            }
-            if (args.contains('build')) {
-              return ProcessResult(0, 0, '{"success": true}', '');
-            }
-            if (args.contains('build_status')) {
-              statusPolls++;
-              final status = statusPolls < 2 ? 'building' : 'completed';
-              if (status == 'completed') {
-                File(
-                  p.join(
-                    unityProjectDir.path,
-                    'Builds',
-                    'android',
-                    'unityLibrary',
-                    'build.gradle',
-                  ),
-                ).createSync(recursive: true);
-              }
-              return ProcessResult(
-                0,
-                0,
-                '{"success": true, "data": {"result": {"status": "$status"}}}',
-                '',
-              );
-            }
-            throw StateError('unexpected call: $args');
-          },
-        );
+    test('android drives the Android menu item on a match', () async {
+      writeManifest(target: 'android');
+      lockProject();
+      final calls = <List<String>>[];
+      final unityCli = UnityCli(
+        env: const {'UNITY_CLI_PATH': '/fake/unity'},
+        fileExists: (_) => true,
+        processRunner: (exe, args, {workingDirectory}) async {
+          calls.add(args);
+          if (args.contains('editor_status')) {
+            return ProcessResult(0, 0, '{"success": true}', '');
+          }
+          if (args.contains('get_build_settings')) {
+            return ProcessResult(
+              0,
+              0,
+              '{"success": true, "data": {"result": '
+                  '{"activeBuildTarget": "Android"}}}',
+              '',
+            );
+          }
+          if (args.contains('menu')) {
+            File(
+              p.join(
+                unityProjectDir.path,
+                'Builds',
+                'android',
+                'unityLibrary',
+                'build.gradle',
+              ),
+            ).createSync(recursive: true);
+            return ProcessResult(0, 0, '{"success": true}', '');
+          }
+          throw StateError('unexpected call: $args');
+        },
+      );
 
-        final code = await run([
-          'android',
-          '--timeout',
-          '1',
-        ], unityCli: unityCli);
+      final code = await run(['android'], unityCli: unityCli);
 
-        expect(code, 0);
-        expect(
-          calls.any(
-            (a) =>
-                a.contains('build') &&
-                a.contains('--target') &&
-                a.contains('Android'),
-          ),
-          isTrue,
-        );
-        expect(calls.any((a) => a.contains('menu')), isFalse);
-      },
-    );
+      expect(code, 0);
+      expect(
+        calls.any(
+          (a) => a.contains('menu') && a.contains('Flunity/Build/Android'),
+        ),
+        isTrue,
+      );
+      expect(calls.any((a) => a.contains('build_status')), isFalse);
+    });
   });
 
   group('locked, Unity CLI available, Editor NOT connected', () {

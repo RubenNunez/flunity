@@ -164,9 +164,9 @@ internal class ProjectExportChecker
         }
 
         AndroidArchitecture architectures = PlayerSettings.Android.targetArchitectures;
-        if (!architectures.HasFlag(AndroidArchitecture.ARMv7) || !architectures.HasFlag(AndroidArchitecture.ARM64))
+        if (!architectures.HasFlag(AndroidArchitecture.ARM64))
         {
-            ProjectExportHelpers.ShowErrorMessage("You must include ARMv7 and ARM64 as target architectures " +
+            ProjectExportHelpers.ShowErrorMessage("You must include ARM64 as a target architecture " +
                 "(see File -> Build settings -> Player Settings -> Other Settings -> Target architectures)");
             return ProjectExportCheckerResult.Failure();
         }
@@ -209,6 +209,12 @@ internal class ProjectExportChecker
             Debug.Log($"Flunity: wiping existing contents of {selectedDirectory.FullName}");
             Directory.Delete(selectedDirectory.FullName, true);
             Directory.CreateDirectory(selectedDirectory.FullName);
+        }
+
+        // Unity 6.3's Android export refuses a destination that exists at all, even empty.
+        if (buildPlayerOptions.target == BuildTarget.Android)
+        {
+            Directory.Delete(selectedDirectory.FullName, true);
         }
 
         return ProjectExportCheckerResult.Success(buildPlayerOptions, precheckWarnings);
