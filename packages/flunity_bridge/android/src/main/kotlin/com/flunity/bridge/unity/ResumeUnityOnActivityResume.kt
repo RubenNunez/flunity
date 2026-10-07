@@ -24,5 +24,13 @@ class ResumeUnityOnActivityResume : LifecycleEventObserver {
             UnityPlayerSingleton.getInstance()?.pause()
             UnityPlayerSingleton.getInstance()?.resume()
         }
+        // Nothing else pauses Unity when the app leaves the screen: embedded as a library it
+        // gets no Activity callbacks of its own, so it kept running in the background --
+        // audio included. ON_STOP rather than ON_PAUSE, so a visible but unfocused window
+        // (split screen, a system dialog) keeps animating.
+        else if (event == Lifecycle.Event.ON_STOP) {
+            Log.d(logTag, "Activity stopped, pausing Unity")
+            UnityPlayerSingleton.getInstance()?.pause()
+        }
     }
 }
