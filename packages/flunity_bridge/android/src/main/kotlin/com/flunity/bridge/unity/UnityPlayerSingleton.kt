@@ -60,6 +60,8 @@ class UnityPlayerSingleton private constructor (activity: Activity) : UnityPlaye
                                 // IFakeUnityPlayerActivity
                             }
 
+                            keepFrameUnpadded(player)
+
                             this.singleton = player
                             return player
                         }
@@ -70,6 +72,20 @@ class UnityPlayerSingleton private constructor (activity: Activity) : UnityPlaye
                             return null
                         }
                     }
+                }
+            }
+        }
+
+        // Unity pads its own frame by the insets of every system bar it leaves shown, so
+        // outside fullscreen the scene stops one navigation-bar height short of the bottom
+        // and the Flutter background shows through behind the gesture bar. Embedded, the
+        // platform view already decides where Unity sits, and Screen.safeArea still tells
+        // the game where the bars are -- so undo the padding whenever Unity applies it.
+        private fun keepFrameUnpadded(player: UnityPlayerSingleton) {
+            player.getFrameLayout().addOnLayoutChangeListener { view, _, _, _, _, _, _, _, _ ->
+                if (view.paddingLeft != 0 || view.paddingTop != 0 ||
+                    view.paddingRight != 0 || view.paddingBottom != 0) {
+                    view.setPadding(0, 0, 0, 0)
                 }
             }
         }
