@@ -46,20 +46,34 @@ public class CustomFrameLayout : FrameLayout  {
         super.onWindowVisibilityChanged(visibility)
     }
 
-    // This is required for Unity's New Input System to receive touch events
+    // This is required for Unity's New Input System to receive touch events.
+    //
+    // Every event goes to Unity under ONE device id. The Input System makes a
+    // Touchscreen per Android deviceId, and a single gesture can arrive under
+    // two: with Hybrid composition Flutter re-dispatches the original
+    // MotionEvent (the real deviceId) when it still has it, and synthesizes one
+    // with deviceId 0 when it does not. Rewriting only the 0s split such a
+    // gesture across two Touchscreens -- the DOWN on one, the UP on the other --
+    // which leaves the first touch "in progress" forever: `primaryTouch` never
+    // ends, `Pointer.press` never fires again, and every tap into Unity is dead
+    // until the player is paused (seen in jellx, 2026-10-08).
+    //
+    // deviceId 0 itself is not an option: Flutter's synthesized events use it
+    // (https://github.com/flutter/flutter/blob/34b454f42dd6f8721dfe43fc7de5d215705b5e52/packages/flutter/lib/src/services/platform_views.dart#L639)
+    // and the Input System does not detect touches from it.
+    //
+    // The incoming event belongs to Flutter, so it is not recycled here.
     override fun dispatchTouchEvent(motionEvent: MotionEvent): Boolean {
-        motionEvent.source = InputDevice.SOURCE_TOUCHSCREEN
-
-         // true for Flutter Virtual Display, false for Hybrid composition.
-        if (motionEvent.deviceId == 0) {        
-            //  Flutter creates a touchscreen motion event with deviceId 0. (https://github.com/flutter/flutter/blob/34b454f42dd6f8721dfe43fc7de5d215705b5e52/packages/flutter/lib/src/services/platform_views.dart#L639)
-            //  Unity's new Input System package does not detect these touches, copy the motion event to change the immutable deviceId.
-            val modifiedEvent = motionEvent.copy(deviceId = -1)
-            motionEvent.recycle()
-            return super.dispatchTouchEvent(modifiedEvent)
-        } else {
+        if (motionEvent.deviceId == unityTouchDeviceId) {
+            motionEvent.source = InputDevice.SOURCE_TOUCHSCREEN
             return super.dispatchTouchEvent(motionEvent)
         }
+        val modifiedEvent = motionEvent.copy(deviceId = unityTouchDeviceId, source = InputDevice.SOURCE_TOUCHSCREEN)
+        return super.dispatchTouchEvent(modifiedEvent)
+    }
+
+    private companion object {
+        const val unityTouchDeviceId = -1
     }
 
 }
